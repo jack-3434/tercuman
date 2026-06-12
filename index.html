@@ -304,6 +304,7 @@
     font-family: inherit;
   }
   .konus:active { transform: scale(0.97); }
+  .konus { touch-action: none; }
   .konus .buyuk { font-size: 19px; font-weight: 750; display: block; }
   .konus .kucuk { font-size: 12px; opacity: 0.85; display: block; margin-top: 3px; }
   #btnTr { background: linear-gradient(160deg, #11A0A0, var(--turkuaz-koyu)); }
@@ -438,10 +439,10 @@
   <div class="bos" id="bosMesaj">
     <div class="bosBaslik">🎙</div>
     <b>Nasıl kullanılır</b><br>
-    Sen konuşacaksan turkuaz tuşa,<br>
-    karşındaki konuşacaksa kırmızı tuşa bas.<br>
-    Konuşma bitince tuşa tekrar bas.<br>
-    Çeviri sesli okunur.
+    Konuşurken tuşu <b>basılı tut</b>.<br>
+    Sen konuşacaksan turkuaz tuşu,<br>
+    karşındaki konuşacaksa kırmızı tuşu.<br>
+    Bitince parmağını <b>kaldır</b> — çeviri sesli okunur.
   </div>
 </div>
 
@@ -453,12 +454,12 @@
   </button>
   <div id="butonlar">
     <button class="konus" id="btnTr">
-      <span class="buyuk">🎙 Türkçe konuş</span>
-      <span class="kucuk">→ Çinceye çevrilir</span>
+      <span class="buyuk">🎙 Türkçe</span>
+      <span class="kucuk">bas-konuş, bırak</span>
     </button>
     <button class="konus" id="btnZh">
-      <span class="buyuk">🎙 请说中文</span>
-      <span class="kucuk">→ 翻译成土耳其语</span>
+      <span class="buyuk">🎙 中文</span>
+      <span class="kucuk">按住说话，松开</span>
     </button>
   </div>
   <div id="yaziSatiri">
@@ -566,7 +567,6 @@ let manuelDinliyor = false;
 function dinlemeyiBaslat(yon) {
   if (!SR) { durumYaz('bu tarayıcıda mikrofon yok — yazarak dene', 'hata'); return; }
   if (mesgul) return;
-  if (taniyici) { dinlemeyiDurdur(); return; }
 
   taniyici = new SR();
   taniyici.lang = yon === 'tr' ? 'tr-TR' : 'zh-CN';
@@ -577,7 +577,7 @@ function dinlemeyiBaslat(yon) {
   manuelDinliyor = true;
 
   (yon === 'tr' ? btnTr : btnZh).classList.add('dinliyor');
-  durumYaz(yon === 'tr' ? 'dinliyorum… (bitince tuşa bas)' : '正在听…（说完再按一次）', 'aktif');
+  durumYaz(yon === 'tr' ? 'dinliyorum… (bitince bırak)' : '正在听…（说完松开）', 'aktif');
 
   taniyici.onresult = (e) => {
     // Kesinleşmiş tüm parçaları birleştir
@@ -622,8 +622,34 @@ function dinlemeyiDurdur(sessiz) {
   }
 }
 
-btnTr.addEventListener('click', () => { if (otoAcik) otoDurdur(); return taniyici && dinlenenYon === 'tr' ? dinlemeyiDurdur() : dinlemeyiBaslat('tr'); });
-btnZh.addEventListener('click', () => { if (otoAcik) otoDurdur(); return taniyici && dinlenenYon === 'zh' ? dinlemeyiDurdur() : dinlemeyiBaslat('zh'); });
+/* ---------- Bas-konuş (walkie-talkie) ---------- */
+function basildi(yon, btn, e) {
+  e.preventDefault();
+  if (otoAcik) otoDurdur();
+  if (mesgul) return;
+  // Önceki dinleme varsa temizle
+  if (taniyici) { manuelDinliyor = false; try { taniyici.onend = null; taniyici.abort(); } catch (x) {} taniyici = null; }
+  try { btn.setPointerCapture(e.pointerId); } catch (x) {}
+  dinlemeyiBaslat(yon);
+}
+function birakildi(btn, e) {
+  if (e) e.preventDefault();
+  try { btn.releasePointerCapture(e.pointerId); } catch (x) {}
+  if (manuelDinliyor) dinlemeyiDurdur(false); // false = biriken metni çevir
+}
+
+btnTr.addEventListener('pointerdown', (e) => basildi('tr', btnTr, e));
+btnTr.addEventListener('pointerup', (e) => birakildi(btnTr, e));
+btnTr.addEventListener('pointercancel', (e) => birakildi(btnTr, e));
+btnTr.addEventListener('pointerleave', (e) => { if (manuelDinliyor && dinlenenYon === 'tr') birakildi(btnTr, e); });
+
+btnZh.addEventListener('pointerdown', (e) => basildi('zh', btnZh, e));
+btnZh.addEventListener('pointerup', (e) => birakildi(btnZh, e));
+btnZh.addEventListener('pointercancel', (e) => birakildi(btnZh, e));
+btnZh.addEventListener('pointerleave', (e) => { if (manuelDinliyor && dinlenenYon === 'zh') birakildi(btnZh, e); });
+
+// Sağ tıklama / uzun basma menüsünü engelle (parmak basılı tutarken çıkmasın)
+[btnTr, btnZh].forEach(b => b.addEventListener('contextmenu', e => e.preventDefault()));
 
 /* ---------- Çeviri ---------- */
 async function cevir(metin, yon) {
