@@ -193,6 +193,7 @@
   .balon.tr-kaynak { align-self: flex-start; border-left: 4px solid var(--turkuaz); border-top-left-radius: 6px; }
   .balon.zh-kaynak { align-self: flex-end; border-right: 4px solid var(--zincifre); border-top-right-radius: 6px; }
   .balon .kaynak { font-size: 13px; color: var(--gri); margin-bottom: 6px; padding-right: 26px; }
+  .balon .ham { font-size: 11px; color: var(--gri); opacity: 0.6; margin-bottom: 6px; font-style: italic; }
   .balon .ceviri { font-size: 20px; font-weight: 650; letter-spacing: 0.01em; }
   .balon.tr-kaynak .ceviri { color: var(--zincifre-koyu); }
   .balon.zh-kaynak .ceviri { color: var(--turkuaz-koyu); }
@@ -313,13 +314,13 @@
     50% { filter: brightness(1.2); box-shadow: 0 0 0 7px rgba(30,34,38,0.06); }
   }
 
-  #yaziSatiri { display: flex; gap: 8px; margin-top: 10px; }
+  #yaziSatiri { display: flex; gap: 8px; margin-top: 12px; align-items: stretch; }
   #yaziGiris {
     flex: 1;
     border: 1px solid var(--cizgi);
-    border-radius: 12px;
-    padding: 11px 12px;
-    font-size: 15px;
+    border-radius: 14px;
+    padding: 15px 16px;
+    font-size: 17px;
     font-family: inherit;
     background: var(--kagit);
     min-width: 0;
@@ -327,23 +328,43 @@
   #yaziGiris:focus { outline: 2px solid var(--turkuaz); border-color: transparent; }
   #yaziGonder {
     border: none;
-    border-radius: 12px;
-    padding: 0 18px;
+    border-radius: 14px;
+    padding: 0 20px;
     background: var(--murekkep);
     color: #fff;
-    font-size: 14px;
+    font-size: 19px;
     font-weight: 600;
     cursor: pointer;
     font-family: inherit;
+    flex-shrink: 0;
   }
-  #yonSec {
-    border: 1px solid var(--cizgi);
-    border-radius: 12px;
-    background: #fff;
-    font-size: 13px;
-    padding: 0 6px;
+  #yaziGonder:active { opacity: 0.85; }
+  #yonDegistir {
+    flex-shrink: 0;
+    border: 1.5px solid var(--turkuaz);
+    border-radius: 14px;
+    background: var(--turkuaz-acik);
+    color: var(--turkuaz-koyu);
     font-family: inherit;
+    font-weight: 750;
+    cursor: pointer;
+    padding: 0 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    min-width: 68px;
+    transition: transform 0.12s, background 0.2s;
   }
+  #yonDegistir:active { transform: scale(0.94); }
+  #yonDegistir.zh-yon {
+    border-color: var(--zincifre);
+    background: var(--zincifre-acik);
+    color: var(--zincifre-koyu);
+  }
+  #yonYazi { font-size: 15px; line-height: 1.1; }
+  #yonOk { font-size: 13px; opacity: 0.7; }
   @media (prefers-reduced-motion: reduce) {
     .balon { animation: none; }
     .konus.dinliyor { animation: none; filter: brightness(1.15); }
@@ -441,12 +462,12 @@
     </button>
   </div>
   <div id="yaziSatiri">
-    <select id="yonSec" aria-label="Çeviri yönü">
-      <option value="tr">TR→中</option>
-      <option value="zh">中→TR</option>
-    </select>
-    <input id="yaziGiris" type="text" placeholder="Mikrofon çalışmazsa buraya yaz…">
-    <button id="yaziGonder">Çevir</button>
+    <button id="yonDegistir" type="button" aria-label="Yön değiştir">
+      <span id="yonYazi">TR→中</span>
+      <span id="yonOk">⇄</span>
+    </button>
+    <input id="yaziGiris" type="text" placeholder="Buraya yazıp çevir…">
+    <button id="yaziGonder" aria-label="Çevir">➤</button>
   </div>
 </div>
 
@@ -454,7 +475,9 @@
 const $ = id => document.getElementById(id);
 const durum = $('durum'), sohbet = $('sohbet'), bosMesaj = $('bosMesaj');
 const btnTr = $('btnTr'), btnZh = $('btnZh');
-const yaziGiris = $('yaziGiris'), yaziGonder = $('yaziGonder'), yonSec = $('yonSec');
+const yaziGiris = $('yaziGiris'), yaziGonder = $('yaziGonder');
+const yonDegistir = $('yonDegistir'), yonYazi = $('yonYazi');
+let yaziYonu = 'tr'; // yazılı çevirinin yönü
 const anahtarEkrani = $('anahtarEkrani'), anahtarGiris = $('anahtarGiris'),
       anahtarKaydet = $('anahtarKaydet'), anahtarHata = $('anahtarHata');
 const ayarEkrani = $('ayarEkrani'), ayarBtn = $('ayarBtn'), ayarKapat = $('ayarKapat');
@@ -602,8 +625,8 @@ async function cevir(metin, yon) {
   ).join('\n');
 
   const istem = yon === 'tr'
-    ? `Sen Türkçe-Çince sözlü tercümansın. Aşağıdaki Türkçe konuşma cümlesini doğal, günlük Mandarin Çincesine çevir. Konuşma dili kullan, kelimesi kelimesine değil anlamına göre çevir.${baglam ? '\n\nÖnceki konuşma (bağlam için):\n' + baglam : ''}\n\nSADECE şu JSON formatında yanıt ver, başka hiçbir şey yazma:\n{"ceviri":"çince çeviri","pinyin":"pinyin okunuşu"}\n\nCümle: ${metin}`
-    : `You are a Turkish-Chinese verbal interpreter. Translate the following spoken Mandarin Chinese sentence into natural, conversational Turkish. Translate by meaning, not word-for-word.${baglam ? '\n\nPrevious conversation (for context):\n' + baglam : ''}\n\nRespond ONLY with this JSON format, nothing else:\n{"ceviri":"turkish translation"}\n\nSentence: ${metin}`;
+    ? `Sen Türkçe-Çince sözlü tercümansın. Aşağıdaki metin bir konuşmanın ses tanıma çıktısıdır; içinde yanlış duyulmuş kelimeler, eksik harfler, bozuk dilbilgisi veya bitişik yazılmış sözcükler olabilir. ÖNCE bağlamdan ve sağduyudan yararlanarak konuşmacının ne demek istediğini anla, kelime hatalarını ve cümle bozukluklarını zihninde düzelt. SONRA bu düzeltilmiş anlamı doğal, günlük Mandarin Çincesine çevir. Kelimesi kelimesine değil, anlamına göre çevir.${baglam ? '\n\nÖnceki konuşma (bağlam için):\n' + baglam : ''}\n\nSADECE şu JSON formatında yanıt ver, başka hiçbir şey yazma:\n{"duzeltilmis":"düzeltilmiş Türkçe cümle","ceviri":"çince çeviri","pinyin":"pinyin okunuşu"}\n\nKonuşma metni: ${metin}`
+    : `You are a Turkish-Chinese verbal interpreter. The text below is the speech-recognition output of someone speaking Mandarin; it may contain misheard words, missing characters, or broken grammar. FIRST use context and common sense to understand what the speaker actually meant and mentally correct any recognition errors. THEN translate that corrected meaning into natural, conversational Turkish. Translate by meaning, not word-for-word.${baglam ? '\n\nPrevious conversation (for context):\n' + baglam : ''}\n\nRespond ONLY with this JSON format, nothing else:\n{"duzeltilmis":"corrected Chinese sentence","ceviri":"turkish translation"}\n\nSpeech text: ${metin}`;
 
   try {
     const yanit = await fetch("https://api.anthropic.com/v1/messages", {
@@ -644,8 +667,8 @@ async function cevir(metin, yon) {
     try { sonuc = JSON.parse(temiz); } catch { sonuc = { ceviri: temiz }; }
 
     bekle.remove();
-    balonEkle(metin, sonuc.ceviri, sonuc.pinyin, yon);
-    gecmis.push({ yon, kaynak: metin, ceviri: sonuc.ceviri });
+    balonEkle(sonuc.duzeltilmis && sonuc.duzeltilmis.trim() ? sonuc.duzeltilmis.trim() : metin, sonuc.ceviri, sonuc.pinyin, yon, metin);
+    gecmis.push({ yon, kaynak: sonuc.duzeltilmis || metin, ceviri: sonuc.ceviri });
     if (gecmis.length > 12) gecmis.shift();
     durumYaz('hazır');
     seslendir(sonuc.ceviri,
@@ -667,11 +690,13 @@ async function cevir(metin, yon) {
   }
 }
 
-function balonEkle(kaynak, ceviri, pinyin, yon) {
+function balonEkle(kaynak, ceviri, pinyin, yon, hamMetin) {
   const b = document.createElement('div');
   b.className = 'balon ' + (yon === 'tr' ? 'tr-kaynak' : 'zh-kaynak');
-  b.innerHTML = '<div class="kaynak"></div><div class="ceviri"></div>' + (pinyin ? '<div class="pinyin"></div>' : '');
+  const duzeltildi = hamMetin && hamMetin.trim() && hamMetin.trim() !== kaynak.trim();
+  b.innerHTML = '<div class="kaynak"></div>' + (duzeltildi ? '<div class="ham"></div>' : '') + '<div class="ceviri"></div>' + (pinyin ? '<div class="pinyin"></div>' : '');
   b.querySelector('.kaynak').textContent = kaynak;
+  if (duzeltildi) b.querySelector('.ham').textContent = 'duyulan: ' + hamMetin.trim();
   b.querySelector('.ceviri').textContent = ceviri || '(çeviri alınamadı)';
   if (pinyin) b.querySelector('.pinyin').textContent = pinyin;
 
@@ -693,23 +718,29 @@ function balonEkle(kaynak, ceviri, pinyin, yon) {
 function seslendir(metin, dil, sesAdi, bitince) {
   if (!metin || !window.speechSynthesis) { if (bitince) bitince(); return; }
   window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(metin);
-  u.lang = dil;
-  const sesler = window.speechSynthesis.getVoices();
-  let secili = sesAdi ? sesler.find(v => v.name === sesAdi) : null;
-  if (!secili) secili = sesler.find(v => v.lang && v.lang.toLowerCase().startsWith(dil.toLowerCase().slice(0,2)));
-  if (secili) u.voice = secili;
-  u.rate = parseFloat(oku('tercuman_hiz', hiz.value)) || 0.95;
-  if (bitince) {
-    let cagrildi = false;
-    const bir = () => { if (!cagrildi) { cagrildi = true; bitince(); } };
-    u.onend = bir;
-    u.onerror = bir;
-    // Güvenlik: bazı tarayıcılar onend tetiklemezse, tahmini süre sonra devam et
-    const tahmin = Math.min(15000, 1500 + metin.length * 90);
-    setTimeout(bir, tahmin);
-  }
-  window.speechSynthesis.speak(u);
+
+  const calistir = () => {
+    const u = new SpeechSynthesisUtterance(metin);
+    u.lang = dil;
+    const sesler = window.speechSynthesis.getVoices();
+    let secili = sesAdi ? sesler.find(v => v.name === sesAdi) : null;
+    if (!secili) secili = sesler.find(v => v.lang && v.lang.toLowerCase().startsWith(dil.toLowerCase().slice(0,2)));
+    if (secili) u.voice = secili;
+    u.rate = parseFloat(oku('tercuman_hiz', hiz.value)) || 0.95;
+    if (bitince) {
+      let cagrildi = false;
+      const bir = () => { if (!cagrildi) { cagrildi = true; bitince(); } };
+      u.onend = bir;
+      u.onerror = bir;
+      const tahmin = Math.min(15000, 1500 + metin.length * 90);
+      setTimeout(bir, tahmin);
+    }
+    window.speechSynthesis.speak(u);
+  };
+
+  // iOS, mikrofon yeni kapandığında hemen konuşmayı yok sayabilir;
+  // kısa bir gecikme hoparlöre geçişi garantiler.
+  setTimeout(calistir, 250);
 }
 
 /* ---------- Otomatik sohbet modu ---------- */
@@ -835,12 +866,29 @@ silBtn.addEventListener('click', () => {
   durumYaz('hazır');
 });
 
-/* ---------- Yazılı giriş ---------- */
+/* ---------- Yazılı giriş ve yön değiştirme ---------- */
+function yonGuncelle() {
+  if (yaziYonu === 'tr') {
+    yonYazi.textContent = 'TR→中';
+    yonDegistir.classList.remove('zh-yon');
+    yaziGiris.placeholder = 'Türkçe yazıp çevir…';
+  } else {
+    yonYazi.textContent = '中→TR';
+    yonDegistir.classList.add('zh-yon');
+    yaziGiris.placeholder = '输入中文…';
+  }
+}
+yonDegistir.addEventListener('click', () => {
+  yaziYonu = yaziYonu === 'tr' ? 'zh' : 'tr';
+  yonGuncelle();
+});
+yonGuncelle();
+
 function yaziCevir() {
   const metin = yaziGiris.value.trim();
   if (!metin || mesgul) return;
   yaziGiris.value = '';
-  cevir(metin, yonSec.value);
+  cevir(metin, yaziYonu);
 }
 yaziGonder.addEventListener('click', yaziCevir);
 yaziGiris.addEventListener('keydown', e => { if (e.key === 'Enter') yaziCevir(); });
