@@ -580,12 +580,12 @@ function dinlemeyiBaslat(yon) {
   durumYaz(yon === 'tr' ? 'dinliyorum… (bitince bırak)' : '正在听…（说完松开）', 'aktif');
 
   taniyici.onresult = (e) => {
-    // Kesinleşmiş tüm parçaları birleştir
-    let kesin = '';
+    // Hem ara hem kesin sonuçları al — böylece çabuk bırakınca metin kaybolmaz
+    let tam = '';
     for (let i = 0; i < e.results.length; i++) {
-      if (e.results[i].isFinal) kesin += e.results[i][0].transcript;
+      tam += e.results[i][0].transcript;
     }
-    if (kesin.trim()) manuelBirikmis = kesin.trim();
+    if (tam.trim()) manuelBirikmis = tam.trim();
   };
   taniyici.onerror = (e) => {
     if (e.error === 'not-allowed') { durumYaz('mikrofon izni gerekli — adres çubuğundan izin ver', 'hata'); manuelDinliyor = false; dinlemeyiDurdur(true); }
@@ -600,53 +600,80 @@ function dinlemeyiBaslat(yon) {
     }
   };
 
-  try { taniyici.start(); } catch (err) { durumYaz('başlatılamadı', 'hata'); dinlemeyiDurdur(); }
+  try { taniyici.start(); } catch (err) {
+    // start hemen başarısızsa (önceki henüz kapanmadıysa) kısa süre sonra tekrar dene
+    setTimeout(() => {
+      if (basiliMi && !mesgul) {
+        try { taniyici && taniyici.start(); }
+        catch (e2) { manuelDinliyor = false; durumYaz('başlatılamadı — tekrar bas', 'hata'); }
+      }
+    }, 120);
+  }
 }
 
 function dinlemeyiDurdur(sessiz) {
-  const vardiBirikmis = manuelBirikmis.trim();
   manuelDinliyor = false;
   if (taniyici) {
-    try { taniyici.onend = null; taniyici.stop(); } catch (e) {}
-    taniyici = null;
+    try { taniyici.onend = null; } catch (e) {}
+    try { taniyici.stop(); } catch (e) {}
   }
   btnTr.classList.remove('dinliyor');
   btnZh.classList.remove('dinliyor');
-  // Kullanıcı tuşa basarak bitirdiyse: biriken tüm metni çevir
-  if (!sessiz && vardiBirikmis) {
-    const yon = dinlenenYon;
+
+  if (sessiz) {
+    // İptal: çevirme
+    if (taniyici) { try { taniyici.abort(); } catch (e) {} taniyici = null; }
     manuelBirikmis = '';
-    cevir(vardiBirikmis, yon);
-  } else if (!sessiz && !mesgul) {
-    durumYaz('hazır');
+    return;
   }
+
+  // Kullanıcı bıraktı: son ses parçalarının gelmesi için kısa bir an bekle, sonra çevir
+  const yon = dinlenenYon;
+  durumYaz('çevriliyor…', 'aktif');
+  setTimeout(() => {
+    if (taniyici) { try { taniyici.abort(); } catch (e) {} taniyici = null; }
+    const metin = manuelBirikmis.trim();
+    manuelBirikmis = '';
+    if (metin) {
+      cevir(metin, yon);
+    } else {
+      durumYaz('ses algılanmadı — tekrar dene', 'hata');
+    }
+  }, 350);
 }
 
 /* ---------- Bas-konuş (walkie-talkie) ---------- */
+let basiliMi = false;
 function basildi(yon, btn, e) {
   e.preventDefault();
   if (otoAcik) otoDurdur();
-  if (mesgul) return;
-  // Önceki dinleme varsa temizle
-  if (taniyici) { manuelDinliyor = false; try { taniyici.onend = null; taniyici.abort(); } catch (x) {} taniyici = null; }
+  if (mesgul) { return; }
+  basiliMi = true;
+  // Önceki tanıyıcı varsa tamamen kapat
+  if (taniyici) {
+    manuelDinliyor = false;
+    try { taniyici.onend = null; taniyici.onresult = null; taniyici.abort(); } catch (x) {}
+    taniyici = null;
+  }
   try { btn.setPointerCapture(e.pointerId); } catch (x) {}
-  dinlemeyiBaslat(yon);
+  // Kısa bir gecikme: önceki tanıyıcının tam kapanmasını bekle, sonra başlat
+  setTimeout(() => { if (basiliMi && !mesgul) dinlemeyiBaslat(yon); }, 60);
 }
 function birakildi(btn, e) {
-  if (e) e.preventDefault();
-  try { btn.releasePointerCapture(e.pointerId); } catch (x) {}
+  if (e) { e.preventDefault(); try { btn.releasePointerCapture(e.pointerId); } catch (x) {} }
+  if (!basiliMi) return;
+  basiliMi = false;
   if (manuelDinliyor) dinlemeyiDurdur(false); // false = biriken metni çevir
+  else durumYaz('hazır'); // çok hızlı bırakıldı, daha başlamadan
 }
 
 btnTr.addEventListener('pointerdown', (e) => basildi('tr', btnTr, e));
 btnTr.addEventListener('pointerup', (e) => birakildi(btnTr, e));
 btnTr.addEventListener('pointercancel', (e) => birakildi(btnTr, e));
-btnTr.addEventListener('pointerleave', (e) => { if (manuelDinliyor && dinlenenYon === 'tr') birakildi(btnTr, e); });
 
 btnZh.addEventListener('pointerdown', (e) => basildi('zh', btnZh, e));
 btnZh.addEventListener('pointerup', (e) => birakildi(btnZh, e));
 btnZh.addEventListener('pointercancel', (e) => birakildi(btnZh, e));
-btnZh.addEventListener('pointerleave', (e) => { if (manuelDinliyor && dinlenenYon === 'zh') birakildi(btnZh, e); });
 
 // Sağ tıklama / uzun basma menüsünü engelle (parmak basılı tutarken çıkmasın)
 [btnTr, btnZh].forEach(b => b.addEventListener('contextmenu', e => e.preventDefault()));
