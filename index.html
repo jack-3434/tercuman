@@ -226,7 +226,69 @@
     background: #fff;
     padding: 12px 14px calc(14px + env(safe-area-inset-bottom));
   }
+  /* Otomatik sohbet düğmesi ve durumu */
+  #otoBtn {
+    width: 100%;
+    border: none;
+    border-radius: 16px;
+    padding: 15px;
+    margin-bottom: 12px;
+    background: linear-gradient(135deg, #2A2F35, var(--murekkep));
+    color: #fff;
+    font-size: 16px;
+    font-weight: 750;
+    cursor: pointer;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    transition: transform 0.1s;
+  }
+  #otoBtn:active { transform: scale(0.98); }
+  #otoBtn.acik {
+    background: linear-gradient(135deg, #11A0A0, var(--turkuaz-koyu));
+  }
+  #otoBtn .oNokta {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: #fff; opacity: 0.5;
+    flex-shrink: 0;
+  }
+  #otoBtn.acik .oNokta { opacity: 1; animation: yanip 1.1s infinite; }
+  @keyframes yanip { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.35; transform: scale(0.8); } }
+
+  /* Otomatik modda kimin sırası olduğunu gösteren şerit */
+  #otoSerit {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 13px;
+    margin-bottom: 12px;
+    border-radius: 14px;
+    font-size: 16px;
+    font-weight: 700;
+    text-align: center;
+  }
+  #otoSerit.goster { display: flex; }
+  #otoSerit.tr { background: var(--turkuaz-acik); color: var(--turkuaz-koyu); }
+  #otoSerit.zh { background: var(--zincifre-acik); color: var(--zincifre-koyu); }
+  #otoSerit.ara { background: var(--kagit); color: var(--gri); border: 1px solid var(--cizgi); }
+  #otoSerit .dalga {
+    display: inline-flex; gap: 3px; align-items: flex-end; height: 18px;
+  }
+  #otoSerit .dalga span {
+    width: 3px; background: currentColor; border-radius: 2px;
+    animation: dalgala 0.9s infinite ease-in-out;
+  }
+  #otoSerit .dalga span:nth-child(1) { height: 8px; animation-delay: 0s; }
+  #otoSerit .dalga span:nth-child(2) { height: 16px; animation-delay: 0.15s; }
+  #otoSerit .dalga span:nth-child(3) { height: 11px; animation-delay: 0.3s; }
+  #otoSerit .dalga span:nth-child(4) { height: 16px; animation-delay: 0.45s; }
+  @keyframes dalgala { 0%,100% { transform: scaleY(0.5); } 50% { transform: scaleY(1); } }
+
   #butonlar { display: flex; gap: 12px; }
+  #butonlar.kilitli { opacity: 0.4; pointer-events: none; }
   .konus {
     flex: 1;
     border: none;
@@ -363,6 +425,11 @@
 </div>
 
 <div id="kontrol">
+  <div id="otoSerit"></div>
+  <button id="otoBtn">
+    <span class="oNokta"></span>
+    <span id="otoBtnYazi">Otomatik sohbet</span>
+  </button>
   <div id="butonlar">
     <button class="konus" id="btnTr">
       <span class="buyuk">🎙 Türkçe konuş</span>
@@ -510,8 +577,8 @@ function dinlemeyiDurdur(sessiz) {
   if (!sessiz && !mesgul) durumYaz('hazır');
 }
 
-btnTr.addEventListener('click', () => taniyici && dinlenenYon === 'tr' ? dinlemeyiDurdur() : dinlemeyiBaslat('tr'));
-btnZh.addEventListener('click', () => taniyici && dinlenenYon === 'zh' ? dinlemeyiDurdur() : dinlemeyiBaslat('zh'));
+btnTr.addEventListener('click', () => { if (otoAcik) otoDurdur(); return taniyici && dinlenenYon === 'tr' ? dinlemeyiDurdur() : dinlemeyiBaslat('tr'); });
+btnZh.addEventListener('click', () => { if (otoAcik) otoDurdur(); return taniyici && dinlenenYon === 'zh' ? dinlemeyiDurdur() : dinlemeyiBaslat('zh'); });
 
 /* ---------- Çeviri ---------- */
 async function cevir(metin, yon) {
@@ -555,7 +622,9 @@ async function cevir(metin, yon) {
     });
 
     if (yanit.status === 401) {
-      bekle.remove(); durumYaz('anahtar geçersiz — ⚙️ ile yenile', 'hata'); mesgul = false; return;
+      bekle.remove(); durumYaz('anahtar geçersiz — ⚙️ ile yenile', 'hata'); mesgul = false;
+      if (otoAcik) otoDurdur();
+      return;
     }
     if (!yanit.ok) {
       const hataVeri = await yanit.json().catch(() => null);
@@ -563,7 +632,9 @@ async function cevir(metin, yon) {
       const mesaj = hataVeri && hataVeri.error && hataVeri.error.message ? hataVeri.error.message : '';
       if (mesaj.toLowerCase().includes('credit')) durumYaz('kredi bitti — console.anthropic.com', 'hata');
       else durumYaz('API hatası: ' + (mesaj || yanit.status), 'hata');
-      mesgul = false; return;
+      mesgul = false;
+      if (otoAcik) otoDurdur();
+      return;
     }
 
     const veri = await yanit.json();
@@ -576,13 +647,21 @@ async function cevir(metin, yon) {
     balonEkle(metin, sonuc.ceviri, sonuc.pinyin, yon);
     gecmis.push({ yon, kaynak: metin, ceviri: sonuc.ceviri });
     if (gecmis.length > 12) gecmis.shift();
+    durumYaz('hazır');
     seslendir(sonuc.ceviri,
               yon === 'tr' ? 'zh-CN' : 'tr-TR',
-              yon === 'tr' ? oku('tercuman_zh_ses','') : oku('tercuman_tr_ses',''));
-    durumYaz('hazır');
+              yon === 'tr' ? oku('tercuman_zh_ses','') : oku('tercuman_tr_ses',''),
+              () => {
+                // Otomatik moddaysak okuma biter bitmez karşı tarafı dinlemeye geç
+                if (otoAcik) {
+                  mesgul = false;
+                  otoSiradakiniDinle(yon === 'tr' ? 'zh' : 'tr');
+                }
+              });
   } catch (err) {
     bekle.remove();
     durumYaz('bağlantı hatası — VPN açık mı?', 'hata');
+    if (otoAcik) { mesgul = false; otoSiradakiniDinle(yon); }
   } finally {
     mesgul = false;
   }
@@ -611,8 +690,8 @@ function balonEkle(kaynak, ceviri, pinyin, yon) {
 }
 
 /* ---------- Sesli okuma ---------- */
-function seslendir(metin, dil, sesAdi) {
-  if (!metin || !window.speechSynthesis) return;
+function seslendir(metin, dil, sesAdi, bitince) {
+  if (!metin || !window.speechSynthesis) { if (bitince) bitince(); return; }
   window.speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(metin);
   u.lang = dil;
@@ -621,7 +700,109 @@ function seslendir(metin, dil, sesAdi) {
   if (!secili) secili = sesler.find(v => v.lang && v.lang.toLowerCase().startsWith(dil.toLowerCase().slice(0,2)));
   if (secili) u.voice = secili;
   u.rate = parseFloat(oku('tercuman_hiz', hiz.value)) || 0.95;
+  if (bitince) {
+    let cagrildi = false;
+    const bir = () => { if (!cagrildi) { cagrildi = true; bitince(); } };
+    u.onend = bir;
+    u.onerror = bir;
+    // Güvenlik: bazı tarayıcılar onend tetiklemezse, tahmini süre sonra devam et
+    const tahmin = Math.min(15000, 1500 + metin.length * 90);
+    setTimeout(bir, tahmin);
+  }
   window.speechSynthesis.speak(u);
+}
+
+/* ---------- Otomatik sohbet modu ---------- */
+const otoBtn = $('otoBtn'), otoBtnYazi = $('otoBtnYazi'), otoSerit = $('otoSerit');
+const butonlar = $('butonlar');
+let otoAcik = false;
+let otoTaniyici = null;
+let otoSessizlikSayaci = null;
+let otoSonDuyulan = '';
+
+function seritGoster(tip, metin, dalgali) {
+  otoSerit.className = 'goster ' + tip;
+  otoSerit.innerHTML = (dalgali ? '<span class="dalga"><span></span><span></span><span></span><span></span></span> ' : '') + metin;
+}
+function seritGizle() { otoSerit.className = ''; }
+
+function otoBaslat() {
+  if (!SR) { durumYaz('bu tarayıcıda otomatik mod yok', 'hata'); return; }
+  if (!anahtarOku()) { anahtarKontrol(); return; }
+  otoAcik = true;
+  otoBtn.classList.add('acik');
+  otoBtnYazi.textContent = 'Otomatik sohbeti durdur';
+  butonlar.classList.add('kilitli');
+  if (bosMesaj && bosMesaj.parentNode) bosMesaj.remove();
+  // Önce sen konuş
+  otoSiradakiniDinle('tr');
+}
+
+function otoDurdur() {
+  otoAcik = false;
+  otoBtn.classList.remove('acik');
+  otoBtnYazi.textContent = 'Otomatik sohbet';
+  butonlar.classList.remove('kilitli');
+  if (otoTaniyici) { try { otoTaniyici.onend = null; otoTaniyici.abort(); } catch (e) {} otoTaniyici = null; }
+  if (otoSessizlikSayaci) { clearTimeout(otoSessizlikSayaci); otoSessizlikSayaci = null; }
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  seritGizle();
+  durumYaz('hazır');
+}
+
+otoBtn.addEventListener('click', () => otoAcik ? otoDurdur() : otoBaslat());
+
+// Otomatik modda belirli bir dili dinle; sessizlik olunca çevir
+function otoSiradakiniDinle(yon) {
+  if (!otoAcik) return;
+  if (otoTaniyici) { try { otoTaniyici.onend = null; otoTaniyici.abort(); } catch (e) {} otoTaniyici = null; }
+
+  seritGoster(yon === 'tr' ? 'tr' : 'zh',
+              yon === 'tr' ? 'Konuşun (Türkçe)' : '请说 (中文)',
+              true);
+
+  otoTaniyici = new SR();
+  otoTaniyici.lang = yon === 'tr' ? 'tr-TR' : 'zh-CN';
+  otoTaniyici.interimResults = true;   // ara sonuçlar: sessizliği yakalamak için
+  otoTaniyici.continuous = true;
+  otoSonDuyulan = '';
+
+  otoTaniyici.onresult = (e) => {
+    let metin = '';
+    for (let i = 0; i < e.results.length; i++) metin += e.results[i][0].transcript;
+    metin = metin.trim();
+    if (metin) {
+      otoSonDuyulan = metin;
+      // Her yeni ses parçasında sessizlik sayacını sıfırla — kişi konuşmayı bitirince tetiklenecek
+      if (otoSessizlikSayaci) clearTimeout(otoSessizlikSayaci);
+      otoSessizlikSayaci = setTimeout(() => otoCumleyiBitir(yon), 1300);
+    }
+  };
+  otoTaniyici.onerror = (e) => {
+    if (e.error === 'not-allowed') { durumYaz('mikrofon izni gerekli', 'hata'); otoDurdur(); return; }
+    // no-speech veya geçici hata: aynı dili dinlemeye devam et
+    if (otoAcik) setTimeout(() => otoSiradakiniDinle(yon), 300);
+  };
+  otoTaniyici.onend = () => {
+    // Tanıyıcı kendi kapandıysa ve hâlâ otomatik moddaysak yeniden başlat
+    if (otoAcik && !mesgul && !otoSonDuyulan) setTimeout(() => otoSiradakiniDinle(yon), 200);
+  };
+
+  try { otoTaniyici.start(); }
+  catch (e) { if (otoAcik) setTimeout(() => otoSiradakiniDinle(yon), 400); }
+}
+
+function otoCumleyiBitir(yon) {
+  if (!otoAcik) return;
+  const metin = otoSonDuyulan.trim();
+  otoSonDuyulan = '';
+  if (otoSessizlikSayaci) { clearTimeout(otoSessizlikSayaci); otoSessizlikSayaci = null; }
+  if (otoTaniyici) { try { otoTaniyici.onend = null; otoTaniyici.abort(); } catch (e) {} otoTaniyici = null; }
+  if (!metin) { otoSiradakiniDinle(yon); return; }
+
+  seritGoster('ara', 'çevriliyor…', false);
+  mesgul = true;
+  cevir(metin, yon); // cevir, okuma bitince otoSiradakiniDinle(diğer dil) çağıracak
 }
 
 /* ---------- Konuşmayı temizle ---------- */
@@ -629,6 +810,7 @@ const silBtn = $('silBtn');
 let silOnay = null;
 silBtn.addEventListener('click', () => {
   if (mesgul) return;
+  if (otoAcik) otoDurdur();
   // İlk dokunuş: onay iste; 3 saniye içinde ikinci dokunuş: sil
   if (!silOnay) {
     silBtn.textContent = '✓';
