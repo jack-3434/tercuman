@@ -560,6 +560,8 @@ trTest.addEventListener('click', () => seslendir('Merhaba, tanıştığımıza m
 
 /* ---------- Ses tanıma ---------- */
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let manuelBirikmis = '';      // sürekli dinlemede biriken metin
+let manuelDinliyor = false;
 
 function dinlemeyiBaslat(yon) {
   if (!SR) { durumYaz('bu tarayıcıda mikrofon yok — yazarak dene', 'hata'); return; }
@@ -568,36 +570,56 @@ function dinlemeyiBaslat(yon) {
 
   taniyici = new SR();
   taniyici.lang = yon === 'tr' ? 'tr-TR' : 'zh-CN';
-  taniyici.interimResults = false;
-  taniyici.continuous = false;
+  taniyici.interimResults = true;   // ara sonuçları al, böylece duraklamada kapanmaz
+  taniyici.continuous = true;       // sen durdurana kadar dinlemeye devam et
   dinlenenYon = yon;
+  manuelBirikmis = '';
+  manuelDinliyor = true;
 
   (yon === 'tr' ? btnTr : btnZh).classList.add('dinliyor');
-  durumYaz(yon === 'tr' ? 'dinliyorum…' : '正在听…', 'aktif');
+  durumYaz(yon === 'tr' ? 'dinliyorum… (bitince tuşa bas)' : '正在听…（说完再按一次）', 'aktif');
 
   taniyici.onresult = (e) => {
-    const metin = e.results[0][0].transcript.trim();
-    if (metin) cevir(metin, yon);
+    // Kesinleşmiş tüm parçaları birleştir
+    let kesin = '';
+    for (let i = 0; i < e.results.length; i++) {
+      if (e.results[i].isFinal) kesin += e.results[i][0].transcript;
+    }
+    if (kesin.trim()) manuelBirikmis = kesin.trim();
   };
   taniyici.onerror = (e) => {
-    if (e.error === 'not-allowed') durumYaz('mikrofon izni gerekli — adres çubuğundan izin ver', 'hata');
-    else if (e.error === 'no-speech') durumYaz('ses algılanmadı', 'hata');
-    else durumYaz('mikrofon hatası: ' + e.error, 'hata');
-    dinlemeyiDurdur(true);
+    if (e.error === 'not-allowed') { durumYaz('mikrofon izni gerekli — adres çubuğundan izin ver', 'hata'); manuelDinliyor = false; dinlemeyiDurdur(true); }
+    else if (e.error === 'no-speech') { /* sessizlik: dinlemeye devam, kapatma */ }
+    else { durumYaz('mikrofon hatası: ' + e.error, 'hata'); manuelDinliyor = false; dinlemeyiDurdur(true); }
   };
-  taniyici.onend = () => dinlemeyiDurdur(true);
+  taniyici.onend = () => {
+    // Sürekli modda iOS tanıyıcıyı kendiliğinden kapatabilir;
+    // kullanıcı hâlâ konuşuyorsa (durdurmadıysa) yeniden başlat
+    if (manuelDinliyor) {
+      try { taniyici.start(); } catch (e) { /* tekrar denemede sorun olursa yoksay */ }
+    }
+  };
 
   try { taniyici.start(); } catch (err) { durumYaz('başlatılamadı', 'hata'); dinlemeyiDurdur(); }
 }
 
 function dinlemeyiDurdur(sessiz) {
+  const vardiBirikmis = manuelBirikmis.trim();
+  manuelDinliyor = false;
   if (taniyici) {
     try { taniyici.onend = null; taniyici.stop(); } catch (e) {}
     taniyici = null;
   }
   btnTr.classList.remove('dinliyor');
   btnZh.classList.remove('dinliyor');
-  if (!sessiz && !mesgul) durumYaz('hazır');
+  // Kullanıcı tuşa basarak bitirdiyse: biriken tüm metni çevir
+  if (!sessiz && vardiBirikmis) {
+    const yon = dinlenenYon;
+    manuelBirikmis = '';
+    cevir(vardiBirikmis, yon);
+  } else if (!sessiz && !mesgul) {
+    durumYaz('hazır');
+  }
 }
 
 btnTr.addEventListener('click', () => { if (otoAcik) otoDurdur(); return taniyici && dinlenenYon === 'tr' ? dinlemeyiDurdur() : dinlemeyiBaslat('tr'); });
@@ -806,7 +828,7 @@ function otoSiradakiniDinle(yon) {
       otoSonDuyulan = metin;
       // Her yeni ses parçasında sessizlik sayacını sıfırla — kişi konuşmayı bitirince tetiklenecek
       if (otoSessizlikSayaci) clearTimeout(otoSessizlikSayaci);
-      otoSessizlikSayaci = setTimeout(() => otoCumleyiBitir(yon), 1300);
+      otoSessizlikSayaci = setTimeout(() => otoCumleyiBitir(yon), 2000);
     }
   };
   otoTaniyici.onerror = (e) => {
