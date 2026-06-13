@@ -1,972 +1,208 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#FAF7F2">
-<title>Tercüman · 翻译</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#4285F4" />
+<title>ERSA · Çin Ofisi Takip</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
 <style>
-  :root {
-    --turkuaz: #0E8B8B;
-    --turkuaz-koyu: #0A6666;
-    --turkuaz-acik: #E3F2F2;
-    --zincifre: #C03A2B;
-    --zincifre-koyu: #93271B;
-    --zincifre-acik: #FAEAE7;
-    --kagit: #FAF7F2;
-    --murekkep: #1E2226;
-    --gri: #8A8F94;
-    --cizgi: #E4DED4;
-    --golge: 0 1px 3px rgba(30,34,38,0.07), 0 4px 14px rgba(30,34,38,0.05);
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body { height: 100%; }
-  body {
-    font-family: -apple-system, "SF Pro Text", "Segoe UI", Roboto, "Noto Sans", sans-serif;
-    background: var(--kagit);
-    color: var(--murekkep);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
+:root{
+  --blue:#4285F4; --link:#1A73E8; --pill:#E8F0FE; --dark:#3C4043; --mute:#80868B;
+  --line:#E3E8EE; --zebra:#F8F9FA; --bg:#F1F3F4; --white:#fff;
+  --red:#EA4335; --redbg:#FCE8E6; --org:#F29900; --orgbg:#FEF0E0;
+  --yel:#FBBC04; --yelbg:#FEF7E0; --grn:#34A853; --grnbg:#E6F4EA;
+  --shadow:0 1px 2px rgba(60,64,67,.1),0 1px 3px rgba(60,64,67,.08);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:Arial,-apple-system,"Segoe UI",Roboto,sans-serif;
+  background:var(--bg); color:var(--dark);
+  -webkit-font-smoothing:antialiased; padding-bottom:84px;
+}
+button{font-family:inherit}
+.appbar{
+  position:sticky; top:0; z-index:30; background:var(--white);
+  padding:14px 16px calc(14px + env(safe-area-inset-top)); border-bottom:1px solid var(--line);
+  display:flex; align-items:center; gap:10px;
+}
+.appbar .logo{color:var(--blue); font-size:20px; font-weight:700; line-height:1}
+.appbar h1{font-size:15px; margin:0; font-weight:700; color:var(--dark)}
+.appbar .sub{font-size:11px; color:var(--mute); font-weight:400}
+.appbar .spacer{flex:1}
+.refresh{border:none;background:var(--pill);color:var(--link);font-weight:700;
+  border-radius:20px;padding:7px 12px;font-size:12px;cursor:pointer}
+.refresh:active{transform:scale(.96)}
 
-  /* ---------- Üst bar ---------- */
-  header {
-    padding: 14px 16px 11px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid var(--cizgi);
-    flex-shrink: 0;
-    background: rgba(250,247,242,0.92);
-    backdrop-filter: blur(8px);
-  }
-  header h1 {
-    font-size: 17px;
-    font-weight: 800;
-    letter-spacing: 0.03em;
-    display: flex;
-    align-items: baseline;
-    gap: 7px;
-  }
-  header h1 .tr-ad { color: var(--turkuaz-koyu); }
-  header h1 .zh-ad { color: var(--zincifre); font-weight: 500; font-size: 15px; }
-  #sagUst { display: flex; align-items: center; gap: 10px; }
-  #durum {
-    font-size: 12px;
-    color: var(--gri);
-    transition: color 0.2s;
-    max-width: 160px;
-    text-align: right;
-  }
-  #durum.aktif { color: var(--turkuaz); font-weight: 600; }
-  #durum.hata { color: var(--zincifre); font-weight: 600; }
-  .ikonBtn {
-    border: 1px solid var(--cizgi);
-    background: #fff;
-    border-radius: 10px;
-    width: 34px; height: 34px;
-    font-size: 16px;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    transition: background 0.15s;
-  }
-  .ikonBtn:active { background: var(--kagit); }
+.wrap{max-width:720px;margin:0 auto;padding:14px}
+.view{display:none}
+.view.active{display:block;animation:fade .18s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 
-  /* ---------- Tam ekran paneller (anahtar + ayarlar) ---------- */
-  .panel {
-    position: fixed; inset: 0;
-    background: var(--kagit);
-    z-index: 20;
-    display: flex; flex-direction: column;
-    overflow-y: auto;
-  }
-  .gizli { display: none !important; }
-  .panelIc {
-    width: 100%; max-width: 460px;
-    margin: 0 auto;
-    padding: 26px 22px 40px;
-  }
-  .panel h2 { font-size: 21px; font-weight: 800; margin-bottom: 6px; }
-  .panel .alt { font-size: 13.5px; color: var(--gri); line-height: 1.6; margin-bottom: 22px; }
-  .alanBaslik {
-    font-size: 12px; font-weight: 700;
-    letter-spacing: 0.08em; text-transform: uppercase;
-    color: var(--gri); margin: 20px 0 8px;
-  }
-  .panel select, .panel input[type=password], .panel input[type=text] {
-    width: 100%;
-    border: 1px solid var(--cizgi);
-    border-radius: 12px;
-    padding: 13px 12px;
-    font-size: 15px;
-    font-family: inherit;
-    background: #fff;
-    appearance: none;
-  }
-  .panel select:focus, .panel input:focus { outline: 2px solid var(--turkuaz); border-color: transparent; }
-  .satir { display: flex; gap: 8px; align-items: center; }
-  .satir select { flex: 1; }
-  .testBtn {
-    border: 1px solid var(--cizgi);
-    background: #fff;
-    border-radius: 12px;
-    padding: 12px 14px;
-    font-size: 15px;
-    cursor: pointer;
-    flex-shrink: 0;
-  }
-  .testBtn:active { background: var(--turkuaz-acik); }
+/* KPI cards */
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media(min-width:560px){.kpis{grid-template-columns:repeat(3,1fr)}}
+.kpi{background:var(--pill);border-radius:14px;padding:12px 14px}
+.kpi .lab{font-size:11px;font-weight:700;color:var(--link);letter-spacing:.2px}
+.kpi .val{font-size:26px;font-weight:700;color:var(--dark);line-height:1.1;margin-top:4px}
+.kpi .cap{font-size:10px;color:var(--mute);margin-top:2px}
+.kpi.alert .val{color:var(--red)}
+.kpi.warn .val{color:var(--org)}
 
-  /* Hız sürgüsü */
-  #hizKutu { background: #fff; border: 1px solid var(--cizgi); border-radius: 12px; padding: 14px 16px 10px; }
-  #hizUst { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
-  #hizDeger { font-weight: 700; color: var(--turkuaz-koyu); font-size: 15px; }
-  #hizEtiket { font-size: 13px; color: var(--gri); }
-  input[type=range] {
-    width: 100%;
-    accent-color: var(--turkuaz);
-    height: 28px;
-  }
-  #hizUclar { display: flex; justify-content: space-between; font-size: 11px; color: var(--gri); }
+.sechead{display:flex;align-items:baseline;gap:8px;margin:20px 2px 10px}
+.sechead h2{font-size:15px;margin:0;font-weight:700;color:var(--dark)}
+.sechead span{font-size:11px;color:var(--mute)}
 
-  .anaBtn {
-    width: 100%;
-    margin-top: 26px;
-    border: none;
-    border-radius: 14px;
-    background: var(--murekkep);
-    color: #fff;
-    padding: 15px;
-    font-size: 16px;
-    font-weight: 700;
-    cursor: pointer;
-    font-family: inherit;
-  }
-  .anaBtn:active { opacity: 0.85; }
-  .panelHata { color: var(--zincifre); font-size: 13px; margin-top: 10px; min-height: 18px; }
-  .ipucu {
-    margin-top: 18px;
-    background: var(--turkuaz-acik);
-    border-radius: 12px;
-    padding: 12px 14px;
-    font-size: 13px;
-    line-height: 1.6;
-    color: var(--turkuaz-koyu);
-  }
+/* chips */
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;
+  padding:3px 8px;border-radius:20px;white-space:nowrap}
+.c-red{background:var(--redbg);color:var(--red)}
+.c-org{background:var(--orgbg);color:var(--org)}
+.c-yel{background:var(--yelbg);color:#9A6700}
+.c-grn{background:var(--grnbg);color:var(--grn)}
+.c-blue{background:var(--pill);color:var(--link)}
+.c-grey{background:#EEF0F2;color:var(--mute)}
 
-  /* ---------- Sohbet ---------- */
-  #sohbet {
-    flex: 1;
-    overflow-y: auto;
-    padding: 18px 14px 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    scroll-behavior: smooth;
-  }
-  .bos {
-    margin: auto;
-    text-align: center;
-    color: var(--gri);
-    font-size: 14px;
-    line-height: 1.8;
-    max-width: 270px;
-  }
-  .bos .bosBaslik {
-    font-size: 30px;
-    margin-bottom: 10px;
-  }
-  .bos b { color: var(--murekkep); }
+/* list cards */
+.card{background:var(--white);border:1px solid var(--line);border-radius:14px;
+  padding:12px 14px;margin-bottom:10px;box-shadow:var(--shadow);cursor:pointer}
+.card:active{background:var(--zebra)}
+.card .top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.card .no{font-size:11px;font-weight:700;color:var(--mute)}
+.card .cust{font-size:15px;font-weight:700;color:var(--dark);flex:1;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card .prod{font-size:13px;color:var(--dark);margin-bottom:8px}
+.card .meta{font-size:11px;color:var(--mute);margin-bottom:8px}
+.card .chips{display:flex;flex-wrap:wrap;gap:6px}
 
-  .balon {
-    max-width: 88%;
-    border-radius: 16px;
-    padding: 11px 15px 13px;
-    line-height: 1.45;
-    animation: gel 0.3s cubic-bezier(0.2, 0.8, 0.3, 1);
-    position: relative;
-    background: #fff;
-    box-shadow: var(--golge);
-  }
-  @keyframes gel { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: none; } }
-  .balon.tr-kaynak { align-self: flex-start; border-left: 4px solid var(--turkuaz); border-top-left-radius: 6px; }
-  .balon.zh-kaynak { align-self: flex-end; border-right: 4px solid var(--zincifre); border-top-right-radius: 6px; }
-  .balon .kaynak { font-size: 13px; color: var(--gri); margin-bottom: 6px; padding-right: 26px; }
-  .balon .ham { font-size: 11px; color: var(--gri); opacity: 0.6; margin-bottom: 6px; font-style: italic; }
-  .balon .ceviri { font-size: 20px; font-weight: 650; letter-spacing: 0.01em; }
-  .balon.tr-kaynak .ceviri { color: var(--zincifre-koyu); }
-  .balon.zh-kaynak .ceviri { color: var(--turkuaz-koyu); }
-  .balon .pinyin { font-size: 12.5px; color: var(--gri); margin-top: 5px; font-style: italic; }
-  .balon .oynat {
-    position: absolute;
-    top: 9px;
-    right: 10px;
-    border: none;
-    background: none;
-    font-size: 16px;
-    cursor: pointer;
-    opacity: 0.5;
-    padding: 2px;
-  }
-  .balon .oynat:active { opacity: 1; }
+/* filters */
+.filters{display:flex;gap:8px;overflow-x:auto;padding:2px 0 10px;-webkit-overflow-scrolling:touch}
+.filters button{border:1px solid var(--line);background:var(--white);color:var(--dark);
+  border-radius:20px;padding:7px 13px;font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer}
+.filters button.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.search{width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 14px;
+  font-size:14px;margin-bottom:12px;background:var(--white)}
+.search:focus{outline:2px solid var(--pill);border-color:var(--blue)}
 
-  .bekliyor {
-    align-self: center;
-    color: var(--gri);
-    font-size: 13px;
-    padding: 4px 0;
-  }
-  .bekliyor::after { content: ""; animation: nokta 1.2s infinite steps(4); }
-  @keyframes nokta { 0% { content: ""; } 25% { content: "."; } 50% { content: ".."; } 75% { content: "..."; } }
+/* bottom nav */
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--white);
+  border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom)}
+.nav button{flex:1;border:none;background:none;padding:9px 0 11px;cursor:pointer;
+  color:var(--mute);font-size:11px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:3px}
+.nav button .ic{font-size:18px;line-height:1}
+.nav button.on{color:var(--link)}
 
-  /* ---------- Alt kontrol ---------- */
-  #kontrol {
-    flex-shrink: 0;
-    border-top: 1px solid var(--cizgi);
-    background: #fff;
-    padding: 12px 14px calc(14px + env(safe-area-inset-bottom));
-  }
-  /* Otomatik sohbet düğmesi ve durumu */
-  #otoBtn {
-    width: 100%;
-    border: none;
-    border-radius: 16px;
-    padding: 15px;
-    margin-bottom: 12px;
-    background: linear-gradient(135deg, #2A2F35, var(--murekkep));
-    color: #fff;
-    font-size: 16px;
-    font-weight: 750;
-    cursor: pointer;
-    font-family: inherit;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 9px;
-    transition: transform 0.1s;
-  }
-  #otoBtn:active { transform: scale(0.98); }
-  #otoBtn.acik {
-    background: linear-gradient(135deg, #11A0A0, var(--turkuaz-koyu));
-  }
-  #otoBtn .oNokta {
-    width: 9px; height: 9px; border-radius: 50%;
-    background: #fff; opacity: 0.5;
-    flex-shrink: 0;
-  }
-  #otoBtn.acik .oNokta { opacity: 1; animation: yanip 1.1s infinite; }
-  @keyframes yanip { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.35; transform: scale(0.8); } }
+/* FAB */
+.fab{position:fixed;right:18px;bottom:84px;z-index:45;background:var(--blue);color:#fff;
+  border:none;border-radius:18px;padding:14px 18px;font-size:14px;font-weight:700;cursor:pointer;
+  box-shadow:0 4px 12px rgba(66,133,244,.4);display:flex;align-items:center;gap:6px}
+.fab:active{transform:scale(.96)}
 
-  /* Otomatik modda kimin sırası olduğunu gösteren şerit */
-  #otoSerit {
-    display: none;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 13px;
-    margin-bottom: 12px;
-    border-radius: 14px;
-    font-size: 16px;
-    font-weight: 700;
-    text-align: center;
-  }
-  #otoSerit.goster { display: flex; }
-  #otoSerit.tr { background: var(--turkuaz-acik); color: var(--turkuaz-koyu); }
-  #otoSerit.zh { background: var(--zincifre-acik); color: var(--zincifre-koyu); }
-  #otoSerit.ara { background: var(--kagit); color: var(--gri); border: 1px solid var(--cizgi); }
-  #otoSerit .dalga {
-    display: inline-flex; gap: 3px; align-items: flex-end; height: 18px;
-  }
-  #otoSerit .dalga span {
-    width: 3px; background: currentColor; border-radius: 2px;
-    animation: dalgala 0.9s infinite ease-in-out;
-  }
-  #otoSerit .dalga span:nth-child(1) { height: 8px; animation-delay: 0s; }
-  #otoSerit .dalga span:nth-child(2) { height: 16px; animation-delay: 0.15s; }
-  #otoSerit .dalga span:nth-child(3) { height: 11px; animation-delay: 0.3s; }
-  #otoSerit .dalga span:nth-child(4) { height: 16px; animation-delay: 0.45s; }
-  @keyframes dalgala { 0%,100% { transform: scaleY(0.5); } 50% { transform: scaleY(1); } }
+/* modal / sheet */
+.scrim{position:fixed;inset:0;background:rgba(32,33,36,.5);z-index:50;display:none}
+.scrim.open{display:block}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:60;background:var(--white);
+  border-radius:18px 18px 0 0;max-height:92vh;overflow-y:auto;transform:translateY(100%);
+  transition:transform .22s ease;padding-bottom:env(safe-area-inset-bottom)}
+.sheet.open{transform:translateY(0)}
+@media(min-width:560px){.sheet{max-width:560px;margin:0 auto;border-radius:18px;bottom:auto;top:50%;
+  transform:translate(0,-50%) scale(.96);opacity:0}.sheet.open{transform:translate(0,-50%) scale(1);opacity:1}}
+.sheet .hd{position:sticky;top:0;background:var(--white);padding:16px;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;gap:10px;z-index:2}
+.sheet .hd h3{margin:0;font-size:16px;flex:1}
+.sheet .hd .x{border:none;background:var(--bg);border-radius:50%;width:30px;height:30px;font-size:16px;cursor:pointer;color:var(--mute)}
+.form{padding:16px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;font-weight:700;color:var(--mute);margin-bottom:5px}
+.field input,.field select,.field textarea{width:100%;border:1px solid var(--line);border-radius:10px;
+  padding:11px 12px;font-size:14px;background:var(--white);color:var(--dark)}
+.field input:focus,.field select:focus,.field textarea:focus{outline:2px solid var(--pill);border-color:var(--blue)}
+.field textarea{min-height:64px;resize:vertical}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.save{width:100%;background:var(--blue);color:#fff;border:none;border-radius:12px;padding:14px;
+  font-size:15px;font-weight:700;cursor:pointer;margin-top:4px}
+.save:active{transform:scale(.99)} .save:disabled{opacity:.6}
+.ghost{width:100%;background:var(--bg);color:var(--dark);border:none;border-radius:12px;padding:12px;
+  font-size:13px;font-weight:600;cursor:pointer;margin-top:8px}
 
-  #butonlar { display: flex; gap: 12px; }
-  #butonlar.kilitli { opacity: 0.4; pointer-events: none; }
-  .konus {
-    flex: 1;
-    border: none;
-    border-radius: 18px;
-    padding: 19px 8px 17px;
-    color: #fff;
-    cursor: pointer;
-    text-align: center;
-    transition: transform 0.1s, filter 0.2s;
-    user-select: none;
-    -webkit-user-select: none;
-    font-family: inherit;
-  }
-  .konus:active { transform: scale(0.97); }
-  .konus { touch-action: none; }
-  .konus .buyuk { font-size: 19px; font-weight: 750; display: block; }
-  .konus .kucuk { font-size: 12px; opacity: 0.85; display: block; margin-top: 3px; }
-  #btnTr { background: linear-gradient(160deg, #11A0A0, var(--turkuaz-koyu)); }
-  #btnZh { background: linear-gradient(160deg, #D24839, var(--zincifre-koyu)); }
-  .konus.dinliyor { animation: nabiz 1s infinite; }
-  @keyframes nabiz {
-    0%,100% { filter: brightness(1); box-shadow: 0 0 0 0 rgba(30,34,38,0.12); }
-    50% { filter: brightness(1.2); box-shadow: 0 0 0 7px rgba(30,34,38,0.06); }
-  }
-
-  #yaziSatiri { display: flex; gap: 8px; margin-top: 12px; align-items: stretch; }
-  #yaziGiris {
-    flex: 1;
-    border: 1px solid var(--cizgi);
-    border-radius: 14px;
-    padding: 15px 16px;
-    font-size: 17px;
-    font-family: inherit;
-    background: var(--kagit);
-    min-width: 0;
-  }
-  #yaziGiris:focus { outline: 2px solid var(--turkuaz); border-color: transparent; }
-  #yaziGonder {
-    border: none;
-    border-radius: 14px;
-    padding: 0 20px;
-    background: var(--murekkep);
-    color: #fff;
-    font-size: 19px;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: inherit;
-    flex-shrink: 0;
-  }
-  #yaziGonder:active { opacity: 0.85; }
-  #yonDegistir {
-    flex-shrink: 0;
-    border: 1.5px solid var(--turkuaz);
-    border-radius: 14px;
-    background: var(--turkuaz-acik);
-    color: var(--turkuaz-koyu);
-    font-family: inherit;
-    font-weight: 750;
-    cursor: pointer;
-    padding: 0 14px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 1px;
-    min-width: 68px;
-    transition: transform 0.12s, background 0.2s;
-  }
-  #yonDegistir:active { transform: scale(0.94); }
-  #yonDegistir.zh-yon {
-    border-color: var(--zincifre);
-    background: var(--zincifre-acik);
-    color: var(--zincifre-koyu);
-  }
-  #yonYazi { font-size: 15px; line-height: 1.1; }
-  #yonOk { font-size: 13px; opacity: 0.7; }
-  @media (prefers-reduced-motion: reduce) {
-    .balon { animation: none; }
-    .konus.dinliyor { animation: none; filter: brightness(1.15); }
-  }
+.empty{text-align:center;color:var(--mute);padding:50px 20px}
+.empty .big{font-size:34px;margin-bottom:8px}
+.empty p{font-size:14px;margin:4px 0}
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(20px);z-index:80;
+  background:var(--dark);color:#fff;padding:11px 18px;border-radius:24px;font-size:13px;font-weight:600;
+  opacity:0;transition:.25s;pointer-events:none;max-width:90%}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.err{background:var(--red)}
+.banner{background:var(--orgbg);color:#9A6700;border-radius:12px;padding:12px 14px;font-size:13px;
+  margin-bottom:12px;font-weight:600;display:none}
+.banner.show{display:block}
+.dist{background:var(--white);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.dist .r{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;font-size:13px}
+.dist .r:nth-child(even){background:var(--zebra)}
+.dist .r b{font-weight:700}
+.loading{text-align:center;color:var(--mute);padding:40px;font-size:14px}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
-
-<!-- ======= API anahtarı paneli ======= -->
-<div class="panel" id="anahtarEkrani">
-  <div class="panelIc">
-    <h2>Tercüman kurulumu</h2>
-    <p class="alt">console.anthropic.com adresinden aldığın API anahtarını yapıştır. Anahtar yalnızca bu cihazda saklanır, hiçbir yere gönderilmez.</p>
-    <div class="alanBaslik">API anahtarı</div>
-    <input id="anahtarGiris" type="password" placeholder="sk-ant-..." autocomplete="off">
-    <button class="anaBtn" id="anahtarKaydet">Kaydet ve başla</button>
-    <div class="panelHata" id="anahtarHata"></div>
+<div class="appbar">
+  <span class="logo">▲</span>
+  <div>
+    <h1>ERSA GROUP</h1>
+    <div class="sub">Çin Ofisi · Talep & Sipariş Takip</div>
   </div>
+  <div class="spacer"></div>
+  <button class="refresh" id="btnRefresh">Yenile</button>
 </div>
 
-<!-- ======= Ayarlar paneli ======= -->
-<div class="panel gizli" id="ayarEkrani">
-  <div class="panelIc">
-    <h2>Ayarlar</h2>
-    <p class="alt">Sesler telefonundaki ses motorundan gelir. Birden fazla seçenek varsa dene, en doğal olanı seç.</p>
+<div class="wrap">
+  <div id="banner" class="banner"></div>
 
-    <div class="alanBaslik">Çince ses</div>
-    <div class="satir">
-      <select id="zhSes"></select>
-      <button class="testBtn" id="zhTest" title="Dene">🔊</button>
+  <!-- PANEL -->
+  <section id="view-panel" class="view active">
+    <div id="panelBody" class="loading">Yükleniyor…</div>
+  </section>
+
+  <!-- TALEPLER -->
+  <section id="view-talep" class="view">
+    <input id="search" class="search" placeholder="Müşteri, ürün veya talep no ara…" />
+    <div class="filters" id="filters">
+      <button data-f="hepsi" class="on">Hepsi</button>
+      <button data-f="geciken">Geciken takip</button>
+      <button data-f="bugun">Bugün/3 gün</button>
+      <button data-f="siparis">Açık sipariş</button>
+      <button data-f="teslim">Teslim yaklaşan</button>
     </div>
+    <div id="talepList"></div>
+  </section>
 
-    <div class="alanBaslik">Türkçe ses</div>
-    <div class="satir">
-      <select id="trSes"></select>
-      <button class="testBtn" id="trTest" title="Dene">🔊</button>
-    </div>
-
-    <div class="alanBaslik">Konuşma hızı</div>
-    <div id="hizKutu">
-      <div id="hizUst">
-        <span id="hizEtiket">Hız</span>
-        <span id="hizDeger">1.0×</span>
-      </div>
-      <input type="range" id="hiz" min="0.5" max="1.5" step="0.05" value="0.95">
-      <div id="hizUclar"><span>yavaş</span><span>normal</span><span>hızlı</span></div>
-    </div>
-
-    <div class="ipucu" id="sesIpucu">
-      💡 Çince ses listede yoksa veya robotik geliyorsa: telefonunda <b>Ayarlar → Sistem → Metin okuma</b> kısmından Google TTS'i seç ve Çince ses verisini indir. iPhone'da <b>Ayarlar → Erişilebilirlik → Seslendirilen İçerik → Sesler</b> altından daha kaliteli Çince ses indirebilirsin.
-    </div>
-
-    <div class="alanBaslik">API anahtarı</div>
-    <button class="anaBtn" style="margin-top:0; background:#fff; color:var(--murekkep); border:1px solid var(--cizgi);" id="anahtarDegistir">Anahtarı değiştir</button>
-
-    <button class="anaBtn" id="ayarKapat">Kaydet ve dön</button>
-  </div>
+  <!-- MÜŞTERİLER -->
+  <section id="view-must" class="view">
+    <input id="searchM" class="search" placeholder="Müşteri ara…" />
+    <div id="mustList"></div>
+  </section>
 </div>
 
-<!-- ======= Ana ekran ======= -->
-<header>
-  <h1><span class="tr-ad">Tercüman</span><span class="zh-ad">翻译</span></h1>
-  <div id="sagUst">
-    <span id="durum">hazır</span>
-    <button class="ikonBtn" id="silBtn" title="Konuşmayı temizle" aria-label="Konuşmayı temizle">🗑</button>
-    <button class="ikonBtn" id="ayarBtn" title="Ayarlar" aria-label="Ayarlar">⚙️</button>
-  </div>
-</header>
+<button class="fab" id="fab">＋ Yeni</button>
 
-<div id="sohbet">
-  <div class="bos" id="bosMesaj">
-    <div class="bosBaslik">🎙</div>
-    <b>Nasıl kullanılır</b><br>
-    Konuşurken tuşu <b>basılı tut</b>.<br>
-    Sen konuşacaksan turkuaz tuşu,<br>
-    karşındaki konuşacaksa kırmızı tuşu.<br>
-    Bitince parmağını <b>kaldır</b> — çeviri sesli okunur.
-  </div>
+<nav class="nav">
+  <button data-v="panel" class="on"><span class="ic">▦</span>Panel</button>
+  <button data-v="talep"><span class="ic">▤</span>Talepler</button>
+  <button data-v="must"><span class="ic">☺</span>Müşteriler</button>
+</nav>
+
+<!-- Sheet / modal -->
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet">
+  <div class="hd"><h3 id="sheetTitle">Yeni Talep</h3><button class="x" id="sheetClose">✕</button></div>
+  <div class="form" id="sheetBody"></div>
 </div>
 
-<div id="kontrol">
-  <div id="otoSerit"></div>
-  <button id="otoBtn">
-    <span class="oNokta"></span>
-    <span id="otoBtnYazi">Otomatik sohbet</span>
-  </button>
-  <div id="butonlar">
-    <button class="konus" id="btnTr">
-      <span class="buyuk">🎙 Türkçe</span>
-      <span class="kucuk">bas-konuş, bırak</span>
-    </button>
-    <button class="konus" id="btnZh">
-      <span class="buyuk">🎙 中文</span>
-      <span class="kucuk">按住说话，松开</span>
-    </button>
-  </div>
-  <div id="yaziSatiri">
-    <button id="yonDegistir" type="button" aria-label="Yön değiştir">
-      <span id="yonYazi">TR→中</span>
-      <span id="yonOk">⇄</span>
-    </button>
-    <input id="yaziGiris" type="text" placeholder="Buraya yazıp çevir…">
-    <button id="yaziGonder" aria-label="Çevir">➤</button>
-  </div>
-</div>
+<div class="toast" id="toast"></div>
 
-<script>
-const $ = id => document.getElementById(id);
-const durum = $('durum'), sohbet = $('sohbet'), bosMesaj = $('bosMesaj');
-const btnTr = $('btnTr'), btnZh = $('btnZh');
-const yaziGiris = $('yaziGiris'), yaziGonder = $('yaziGonder');
-const yonDegistir = $('yonDegistir'), yonYazi = $('yonYazi');
-let yaziYonu = 'tr'; // yazılı çevirinin yönü
-const anahtarEkrani = $('anahtarEkrani'), anahtarGiris = $('anahtarGiris'),
-      anahtarKaydet = $('anahtarKaydet'), anahtarHata = $('anahtarHata');
-const ayarEkrani = $('ayarEkrani'), ayarBtn = $('ayarBtn'), ayarKapat = $('ayarKapat');
-const zhSes = $('zhSes'), trSes = $('trSes'), zhTest = $('zhTest'), trTest = $('trTest');
-const hiz = $('hiz'), hizDeger = $('hizDeger');
-const anahtarDegistir = $('anahtarDegistir');
-
-let taniyici = null, dinlenenYon = null, mesgul = false;
-let gecmis = []; // bağlam için son çeviriler
-
-/* ---------- Kayıtlı ayarlar ---------- */
-function oku(k, varsayilan) { try { return localStorage.getItem(k) ?? varsayilan; } catch (e) { return varsayilan; } }
-function yaz(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
-
-function anahtarOku() { return oku('tercuman_anahtar', ''); }
-function anahtarKontrol() {
-  if (anahtarOku()) anahtarEkrani.classList.add('gizli');
-  else anahtarEkrani.classList.remove('gizli');
-}
-anahtarKaydet.addEventListener('click', () => {
-  const k = anahtarGiris.value.trim();
-  if (!k.startsWith('sk-ant-')) { anahtarHata.textContent = 'Anahtar sk-ant- ile başlamalı. Kontrol et.'; return; }
-  yaz('tercuman_anahtar', k);
-  anahtarGiris.value = ''; anahtarHata.textContent = '';
-  anahtarKontrol();
-});
-anahtarDegistir.addEventListener('click', () => {
-  ayarEkrani.classList.add('gizli');
-  anahtarEkrani.classList.remove('gizli');
-});
-anahtarKontrol();
-
-function durumYaz(metin, sinif) { durum.textContent = metin; durum.className = sinif || ''; }
-
-/* ---------- Ses listesi ve ayarlar paneli ---------- */
-function sesleriDoldur() {
-  const sesler = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
-  const zhListe = sesler.filter(v => v.lang && v.lang.toLowerCase().startsWith('zh'));
-  const trListe = sesler.filter(v => v.lang && v.lang.toLowerCase().startsWith('tr'));
-
-  function doldur(sec, liste, kayitliAd, bosYazi) {
-    sec.innerHTML = '';
-    if (!liste.length) {
-      const o = document.createElement('option');
-      o.textContent = bosYazi; o.value = '';
-      sec.appendChild(o);
-      return;
-    }
-    liste.forEach(v => {
-      const o = document.createElement('option');
-      o.value = v.name;
-      o.textContent = v.name + (v.localService ? '' : ' (çevrimiçi)');
-      if (v.name === kayitliAd) o.selected = true;
-      sec.appendChild(o);
-    });
-  }
-  doldur(zhSes, zhListe, oku('tercuman_zh_ses', ''), 'Çince ses bulunamadı — ipucuna bak');
-  doldur(trSes, trListe, oku('tercuman_tr_ses', ''), 'Türkçe ses bulunamadı');
-}
-if (window.speechSynthesis) {
-  sesleriDoldur();
-  window.speechSynthesis.onvoiceschanged = sesleriDoldur;
-}
-
-hiz.value = oku('tercuman_hiz', '0.95');
-hizDeger.textContent = parseFloat(hiz.value).toFixed(2).replace(/0$/,'') + '×';
-hiz.addEventListener('input', () => {
-  hizDeger.textContent = parseFloat(hiz.value).toFixed(2).replace(/0$/,'') + '×';
-});
-
-ayarBtn.addEventListener('click', () => { sesleriDoldur(); ayarEkrani.classList.remove('gizli'); });
-ayarKapat.addEventListener('click', () => {
-  yaz('tercuman_zh_ses', zhSes.value || '');
-  yaz('tercuman_tr_ses', trSes.value || '');
-  yaz('tercuman_hiz', hiz.value);
-  ayarEkrani.classList.add('gizli');
-});
-zhTest.addEventListener('click', () => seslendir('你好，很高兴认识你。', 'zh-CN', zhSes.value));
-trTest.addEventListener('click', () => seslendir('Merhaba, tanıştığımıza memnun oldum.', 'tr-TR', trSes.value));
-
-/* ---------- Ses tanıma ---------- */
-const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-let manuelBirikmis = '';      // sürekli dinlemede biriken metin
-let manuelDinliyor = false;
-
-function dinlemeyiBaslat(yon) {
-  if (!SR) { durumYaz('bu tarayıcıda mikrofon yok — yazarak dene', 'hata'); return; }
-  if (mesgul) return;
-
-  taniyici = new SR();
-  taniyici.lang = yon === 'tr' ? 'tr-TR' : 'zh-CN';
-  taniyici.interimResults = true;   // ara sonuçları al, böylece duraklamada kapanmaz
-  taniyici.continuous = true;       // sen durdurana kadar dinlemeye devam et
-  dinlenenYon = yon;
-  manuelBirikmis = '';
-  manuelDinliyor = true;
-
-  (yon === 'tr' ? btnTr : btnZh).classList.add('dinliyor');
-  durumYaz(yon === 'tr' ? 'dinliyorum… (bitince bırak)' : '正在听…（说完松开）', 'aktif');
-
-  taniyici.onresult = (e) => {
-    // Hem ara hem kesin sonuçları al — böylece çabuk bırakınca metin kaybolmaz
-    let tam = '';
-    for (let i = 0; i < e.results.length; i++) {
-      tam += e.results[i][0].transcript;
-    }
-    if (tam.trim()) manuelBirikmis = tam.trim();
-  };
-  taniyici.onerror = (e) => {
-    if (e.error === 'not-allowed') { durumYaz('mikrofon izni gerekli — adres çubuğundan izin ver', 'hata'); manuelDinliyor = false; dinlemeyiDurdur(true); }
-    else if (e.error === 'no-speech') { /* sessizlik: dinlemeye devam, kapatma */ }
-    else { durumYaz('mikrofon hatası: ' + e.error, 'hata'); manuelDinliyor = false; dinlemeyiDurdur(true); }
-  };
-  taniyici.onend = () => {
-    // Sürekli modda iOS tanıyıcıyı kendiliğinden kapatabilir;
-    // kullanıcı hâlâ konuşuyorsa (durdurmadıysa) yeniden başlat
-    if (manuelDinliyor) {
-      try { taniyici.start(); } catch (e) { /* tekrar denemede sorun olursa yoksay */ }
-    }
-  };
-
-  try { taniyici.start(); } catch (err) {
-    // start hemen başarısızsa (önceki henüz kapanmadıysa) kısa süre sonra tekrar dene
-    setTimeout(() => {
-      if (basiliMi && !mesgul) {
-        try { taniyici && taniyici.start(); }
-        catch (e2) { manuelDinliyor = false; durumYaz('başlatılamadı — tekrar bas', 'hata'); }
-      }
-    }, 120);
-  }
-}
-
-function dinlemeyiDurdur(sessiz) {
-  manuelDinliyor = false;
-  if (taniyici) {
-    try { taniyici.onend = null; } catch (e) {}
-    try { taniyici.stop(); } catch (e) {}
-  }
-  btnTr.classList.remove('dinliyor');
-  btnZh.classList.remove('dinliyor');
-
-  if (sessiz) {
-    // İptal: çevirme
-    if (taniyici) { try { taniyici.abort(); } catch (e) {} taniyici = null; }
-    manuelBirikmis = '';
-    return;
-  }
-
-  // Kullanıcı bıraktı: son ses parçalarının gelmesi için kısa bir an bekle, sonra çevir
-  const yon = dinlenenYon;
-  durumYaz('çevriliyor…', 'aktif');
-  setTimeout(() => {
-    if (taniyici) { try { taniyici.abort(); } catch (e) {} taniyici = null; }
-    const metin = manuelBirikmis.trim();
-    manuelBirikmis = '';
-    if (metin) {
-      cevir(metin, yon);
-    } else {
-      durumYaz('ses algılanmadı — tekrar dene', 'hata');
-    }
-  }, 350);
-}
-
-/* ---------- Bas-konuş (walkie-talkie) ---------- */
-let basiliMi = false;
-function basildi(yon, btn, e) {
-  e.preventDefault();
-  if (otoAcik) otoDurdur();
-  if (mesgul) { return; }
-  basiliMi = true;
-  // Önceki tanıyıcı varsa tamamen kapat
-  if (taniyici) {
-    manuelDinliyor = false;
-    try { taniyici.onend = null; taniyici.onresult = null; taniyici.abort(); } catch (x) {}
-    taniyici = null;
-  }
-  try { btn.setPointerCapture(e.pointerId); } catch (x) {}
-  // Kısa bir gecikme: önceki tanıyıcının tam kapanmasını bekle, sonra başlat
-  setTimeout(() => { if (basiliMi && !mesgul) dinlemeyiBaslat(yon); }, 60);
-}
-function birakildi(btn, e) {
-  if (e) { e.preventDefault(); try { btn.releasePointerCapture(e.pointerId); } catch (x) {} }
-  if (!basiliMi) return;
-  basiliMi = false;
-  if (manuelDinliyor) dinlemeyiDurdur(false); // false = biriken metni çevir
-  else durumYaz('hazır'); // çok hızlı bırakıldı, daha başlamadan
-}
-
-btnTr.addEventListener('pointerdown', (e) => basildi('tr', btnTr, e));
-btnTr.addEventListener('pointerup', (e) => birakildi(btnTr, e));
-btnTr.addEventListener('pointercancel', (e) => birakildi(btnTr, e));
-
-btnZh.addEventListener('pointerdown', (e) => basildi('zh', btnZh, e));
-btnZh.addEventListener('pointerup', (e) => birakildi(btnZh, e));
-btnZh.addEventListener('pointercancel', (e) => birakildi(btnZh, e));
-
-// Sağ tıklama / uzun basma menüsünü engelle (parmak basılı tutarken çıkmasın)
-[btnTr, btnZh].forEach(b => b.addEventListener('contextmenu', e => e.preventDefault()));
-
-/* ---------- Çeviri ---------- */
-async function cevir(metin, yon) {
-  const anahtar = anahtarOku();
-  if (!anahtar) { anahtarKontrol(); return; }
-
-  dinlemeyiDurdur(true);
-  mesgul = true;
-  if (bosMesaj && bosMesaj.parentNode) bosMesaj.remove();
-
-  const bekle = document.createElement('div');
-  bekle.className = 'bekliyor';
-  bekle.textContent = 'çevriliyor';
-  sohbet.appendChild(bekle);
-  sohbet.scrollTop = sohbet.scrollHeight;
-  durumYaz('çevriliyor…', 'aktif');
-
-  // Son konuşmaları bağlam olarak ekle — zamirler ve devam eden konu doğru çevrilsin
-  const baglam = gecmis.slice(-4).map(g =>
-    (g.yon === 'tr' ? 'TR' : 'ZH') + ': ' + g.kaynak + ' => ' + g.ceviri
-  ).join('\n');
-
-  const istem = yon === 'tr'
-    ? `Sen Türkçe-Çince sözlü tercümansın. Aşağıdaki metin bir konuşmanın ses tanıma çıktısıdır; içinde yanlış duyulmuş kelimeler, eksik harfler, bozuk dilbilgisi veya bitişik yazılmış sözcükler olabilir. ÖNCE bağlamdan ve sağduyudan yararlanarak konuşmacının ne demek istediğini anla, kelime hatalarını ve cümle bozukluklarını zihninde düzelt. SONRA bu düzeltilmiş anlamı doğal, günlük Mandarin Çincesine çevir. Kelimesi kelimesine değil, anlamına göre çevir.${baglam ? '\n\nÖnceki konuşma (bağlam için):\n' + baglam : ''}\n\nSADECE şu JSON formatında yanıt ver, başka hiçbir şey yazma:\n{"duzeltilmis":"düzeltilmiş Türkçe cümle","ceviri":"çince çeviri","pinyin":"pinyin okunuşu"}\n\nKonuşma metni: ${metin}`
-    : `You are a Turkish-Chinese verbal interpreter. The text below is the speech-recognition output of someone speaking Mandarin; it may contain misheard words, missing characters, or broken grammar. FIRST use context and common sense to understand what the speaker actually meant and mentally correct any recognition errors. THEN translate that corrected meaning into natural, conversational Turkish. Translate by meaning, not word-for-word.${baglam ? '\n\nPrevious conversation (for context):\n' + baglam : ''}\n\nRespond ONLY with this JSON format, nothing else:\n{"duzeltilmis":"corrected Chinese sentence","ceviri":"turkish translation"}\n\nSpeech text: ${metin}`;
-
-  try {
-    const yanit = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": anahtar,
-        "anthropic-version": "2023-06-01",
-        "anthropic-dangerous-direct-browser-access": "true"
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-6",
-        max_tokens: 1000,
-        messages: [{ role: "user", content: istem }]
-      })
-    });
-
-    if (yanit.status === 401) {
-      bekle.remove(); durumYaz('anahtar geçersiz — ⚙️ ile yenile', 'hata'); mesgul = false;
-      if (otoAcik) otoDurdur();
-      return;
-    }
-    if (!yanit.ok) {
-      const hataVeri = await yanit.json().catch(() => null);
-      bekle.remove();
-      const mesaj = hataVeri && hataVeri.error && hataVeri.error.message ? hataVeri.error.message : '';
-      if (mesaj.toLowerCase().includes('credit')) durumYaz('kredi bitti — console.anthropic.com', 'hata');
-      else durumYaz('API hatası: ' + (mesaj || yanit.status), 'hata');
-      mesgul = false;
-      if (otoAcik) otoDurdur();
-      return;
-    }
-
-    const veri = await yanit.json();
-    const ham = (veri.content || []).map(p => p.text || '').join('');
-    const temiz = ham.replace(/```json|```/g, '').trim();
-    let sonuc;
-    try { sonuc = JSON.parse(temiz); } catch { sonuc = { ceviri: temiz }; }
-
-    bekle.remove();
-    balonEkle(sonuc.duzeltilmis && sonuc.duzeltilmis.trim() ? sonuc.duzeltilmis.trim() : metin, sonuc.ceviri, sonuc.pinyin, yon, metin);
-    gecmis.push({ yon, kaynak: sonuc.duzeltilmis || metin, ceviri: sonuc.ceviri });
-    if (gecmis.length > 12) gecmis.shift();
-    durumYaz('hazır');
-    seslendir(sonuc.ceviri,
-              yon === 'tr' ? 'zh-CN' : 'tr-TR',
-              yon === 'tr' ? oku('tercuman_zh_ses','') : oku('tercuman_tr_ses',''),
-              () => {
-                // Otomatik moddaysak okuma biter bitmez karşı tarafı dinlemeye geç
-                if (otoAcik) {
-                  mesgul = false;
-                  otoSiradakiniDinle(yon === 'tr' ? 'zh' : 'tr');
-                }
-              });
-  } catch (err) {
-    bekle.remove();
-    durumYaz('bağlantı hatası — VPN açık mı?', 'hata');
-    if (otoAcik) { mesgul = false; otoSiradakiniDinle(yon); }
-  } finally {
-    mesgul = false;
-  }
-}
-
-function balonEkle(kaynak, ceviri, pinyin, yon, hamMetin) {
-  const b = document.createElement('div');
-  b.className = 'balon ' + (yon === 'tr' ? 'tr-kaynak' : 'zh-kaynak');
-  const duzeltildi = hamMetin && hamMetin.trim() && hamMetin.trim() !== kaynak.trim();
-  b.innerHTML = '<div class="kaynak"></div>' + (duzeltildi ? '<div class="ham"></div>' : '') + '<div class="ceviri"></div>' + (pinyin ? '<div class="pinyin"></div>' : '');
-  b.querySelector('.kaynak').textContent = kaynak;
-  if (duzeltildi) b.querySelector('.ham').textContent = 'duyulan: ' + hamMetin.trim();
-  b.querySelector('.ceviri').textContent = ceviri || '(çeviri alınamadı)';
-  if (pinyin) b.querySelector('.pinyin').textContent = pinyin;
-
-  const oynat = document.createElement('button');
-  oynat.className = 'oynat';
-  oynat.textContent = '🔊';
-  oynat.setAttribute('aria-label', 'Tekrar dinle');
-  oynat.addEventListener('click', () =>
-    seslendir(ceviri,
-              yon === 'tr' ? 'zh-CN' : 'tr-TR',
-              yon === 'tr' ? oku('tercuman_zh_ses','') : oku('tercuman_tr_ses','')));
-  b.appendChild(oynat);
-
-  sohbet.appendChild(b);
-  sohbet.scrollTop = sohbet.scrollHeight;
-}
-
-/* ---------- Sesli okuma ---------- */
-function seslendir(metin, dil, sesAdi, bitince) {
-  if (!metin || !window.speechSynthesis) { if (bitince) bitince(); return; }
-  window.speechSynthesis.cancel();
-
-  const calistir = () => {
-    const u = new SpeechSynthesisUtterance(metin);
-    u.lang = dil;
-    const sesler = window.speechSynthesis.getVoices();
-    let secili = sesAdi ? sesler.find(v => v.name === sesAdi) : null;
-    if (!secili) secili = sesler.find(v => v.lang && v.lang.toLowerCase().startsWith(dil.toLowerCase().slice(0,2)));
-    if (secili) u.voice = secili;
-    u.rate = parseFloat(oku('tercuman_hiz', hiz.value)) || 0.95;
-    if (bitince) {
-      let cagrildi = false;
-      const bir = () => { if (!cagrildi) { cagrildi = true; bitince(); } };
-      u.onend = bir;
-      u.onerror = bir;
-      const tahmin = Math.min(15000, 1500 + metin.length * 90);
-      setTimeout(bir, tahmin);
-    }
-    window.speechSynthesis.speak(u);
-  };
-
-  // iOS, mikrofon yeni kapandığında hemen konuşmayı yok sayabilir;
-  // kısa bir gecikme hoparlöre geçişi garantiler.
-  setTimeout(calistir, 250);
-}
-
-/* ---------- Otomatik sohbet modu ---------- */
-const otoBtn = $('otoBtn'), otoBtnYazi = $('otoBtnYazi'), otoSerit = $('otoSerit');
-const butonlar = $('butonlar');
-let otoAcik = false;
-let otoTaniyici = null;
-let otoSessizlikSayaci = null;
-let otoSonDuyulan = '';
-
-function seritGoster(tip, metin, dalgali) {
-  otoSerit.className = 'goster ' + tip;
-  otoSerit.innerHTML = (dalgali ? '<span class="dalga"><span></span><span></span><span></span><span></span></span> ' : '') + metin;
-}
-function seritGizle() { otoSerit.className = ''; }
-
-function otoBaslat() {
-  if (!SR) { durumYaz('bu tarayıcıda otomatik mod yok', 'hata'); return; }
-  if (!anahtarOku()) { anahtarKontrol(); return; }
-  otoAcik = true;
-  otoBtn.classList.add('acik');
-  otoBtnYazi.textContent = 'Otomatik sohbeti durdur';
-  butonlar.classList.add('kilitli');
-  if (bosMesaj && bosMesaj.parentNode) bosMesaj.remove();
-  // Önce sen konuş
-  otoSiradakiniDinle('tr');
-}
-
-function otoDurdur() {
-  otoAcik = false;
-  otoBtn.classList.remove('acik');
-  otoBtnYazi.textContent = 'Otomatik sohbet';
-  butonlar.classList.remove('kilitli');
-  if (otoTaniyici) { try { otoTaniyici.onend = null; otoTaniyici.abort(); } catch (e) {} otoTaniyici = null; }
-  if (otoSessizlikSayaci) { clearTimeout(otoSessizlikSayaci); otoSessizlikSayaci = null; }
-  if (window.speechSynthesis) window.speechSynthesis.cancel();
-  seritGizle();
-  durumYaz('hazır');
-}
-
-otoBtn.addEventListener('click', () => otoAcik ? otoDurdur() : otoBaslat());
-
-// Otomatik modda belirli bir dili dinle; sessizlik olunca çevir
-function otoSiradakiniDinle(yon) {
-  if (!otoAcik) return;
-  if (otoTaniyici) { try { otoTaniyici.onend = null; otoTaniyici.abort(); } catch (e) {} otoTaniyici = null; }
-
-  seritGoster(yon === 'tr' ? 'tr' : 'zh',
-              yon === 'tr' ? 'Konuşun (Türkçe)' : '请说 (中文)',
-              true);
-
-  otoTaniyici = new SR();
-  otoTaniyici.lang = yon === 'tr' ? 'tr-TR' : 'zh-CN';
-  otoTaniyici.interimResults = true;   // ara sonuçlar: sessizliği yakalamak için
-  otoTaniyici.continuous = true;
-  otoSonDuyulan = '';
-
-  otoTaniyici.onresult = (e) => {
-    let metin = '';
-    for (let i = 0; i < e.results.length; i++) metin += e.results[i][0].transcript;
-    metin = metin.trim();
-    if (metin) {
-      otoSonDuyulan = metin;
-      // Her yeni ses parçasında sessizlik sayacını sıfırla — kişi konuşmayı bitirince tetiklenecek
-      if (otoSessizlikSayaci) clearTimeout(otoSessizlikSayaci);
-      otoSessizlikSayaci = setTimeout(() => otoCumleyiBitir(yon), 2000);
-    }
-  };
-  otoTaniyici.onerror = (e) => {
-    if (e.error === 'not-allowed') { durumYaz('mikrofon izni gerekli', 'hata'); otoDurdur(); return; }
-    // no-speech veya geçici hata: aynı dili dinlemeye devam et
-    if (otoAcik) setTimeout(() => otoSiradakiniDinle(yon), 300);
-  };
-  otoTaniyici.onend = () => {
-    // Tanıyıcı kendi kapandıysa ve hâlâ otomatik moddaysak yeniden başlat
-    if (otoAcik && !mesgul && !otoSonDuyulan) setTimeout(() => otoSiradakiniDinle(yon), 200);
-  };
-
-  try { otoTaniyici.start(); }
-  catch (e) { if (otoAcik) setTimeout(() => otoSiradakiniDinle(yon), 400); }
-}
-
-function otoCumleyiBitir(yon) {
-  if (!otoAcik) return;
-  const metin = otoSonDuyulan.trim();
-  otoSonDuyulan = '';
-  if (otoSessizlikSayaci) { clearTimeout(otoSessizlikSayaci); otoSessizlikSayaci = null; }
-  if (otoTaniyici) { try { otoTaniyici.onend = null; otoTaniyici.abort(); } catch (e) {} otoTaniyici = null; }
-  if (!metin) { otoSiradakiniDinle(yon); return; }
-
-  seritGoster('ara', 'çevriliyor…', false);
-  mesgul = true;
-  cevir(metin, yon); // cevir, okuma bitince otoSiradakiniDinle(diğer dil) çağıracak
-}
-
-/* ---------- Konuşmayı temizle ---------- */
-const silBtn = $('silBtn');
-let silOnay = null;
-silBtn.addEventListener('click', () => {
-  if (mesgul) return;
-  if (otoAcik) otoDurdur();
-  // İlk dokunuş: onay iste; 3 saniye içinde ikinci dokunuş: sil
-  if (!silOnay) {
-    silBtn.textContent = '✓';
-    durumYaz('silmek için tekrar dokun', 'hata');
-    silOnay = setTimeout(() => {
-      silBtn.textContent = '🗑';
-      durumYaz('hazır');
-      silOnay = null;
-    }, 3000);
-    return;
-  }
-  clearTimeout(silOnay);
-  silOnay = null;
-  silBtn.textContent = '🗑';
-  gecmis = [];
-  if (window.speechSynthesis) window.speechSynthesis.cancel();
-  sohbet.innerHTML = '';
-  const bos = document.createElement('div');
-  bos.className = 'bos';
-  bos.innerHTML = '<div class="bosBaslik">🎙</div><b>Temizlendi</b><br>Yeni konuşmaya hazır.<br>Sen konuşacaksan turkuaz tuşa,<br>karşındaki konuşacaksa kırmızı tuşa bas.';
-  sohbet.appendChild(bos);
-  durumYaz('hazır');
-});
-
-/* ---------- Yazılı giriş ve yön değiştirme ---------- */
-function yonGuncelle() {
-  if (yaziYonu === 'tr') {
-    yonYazi.textContent = 'TR→中';
-    yonDegistir.classList.remove('zh-yon');
-    yaziGiris.placeholder = 'Türkçe yazıp çevir…';
-  } else {
-    yonYazi.textContent = '中→TR';
-    yonDegistir.classList.add('zh-yon');
-    yaziGiris.placeholder = '输入中文…';
-  }
-}
-yonDegistir.addEventListener('click', () => {
-  yaziYonu = yaziYonu === 'tr' ? 'zh' : 'tr';
-  yonGuncelle();
-});
-yonGuncelle();
-
-function yaziCevir() {
-  const metin = yaziGiris.value.trim();
-  if (!metin || mesgul) return;
-  yaziGiris.value = '';
-  cevir(metin, yaziYonu);
-}
-yaziGonder.addEventListener('click', yaziCevir);
-yaziGiris.addEventListener('keydown', e => { if (e.key === 'Enter') yaziCevir(); });
-</script>
+<script src="config.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
