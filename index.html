@@ -64,6 +64,16 @@ i.ic{display:inline-flex;}i.ic svg{display:block;}
 .fbtn{border:1px solid var(--line);background:#1c1c1c;color:#CFCFCF;border-radius:20px;padding:7px 13px;font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer;flex-shrink:0;}
 .fbtn.on{background:var(--red);color:#fff;border-color:var(--red);}
 .banner{background:#2A1810;color:var(--gold);border:1px solid #4a2c12;border-radius:14px;padding:13px 15px;font-size:12.5px;font-weight:600;margin-top:10px;}
+.login{display:flex;flex-direction:column;justify-content:center;min-height:100%;padding:34px 26px;}
+.login .logo{width:100%;max-width:248px;margin:0 auto 8px;display:block;}
+.login .lt{text-align:center;font-size:13px;color:var(--muted);letter-spacing:2px;font-weight:700;margin-bottom:34px;}
+.login .lerr{color:#FF6B5E;font-size:12.5px;text-align:center;margin-top:10px;min-height:16px;}
+.rememberbox{display:flex;align-items:center;gap:9px;margin:2px 0 18px;cursor:pointer;color:#CFCFCF;font-size:13px;font-weight:600;}
+.rememberbox input{width:18px;height:18px;accent-color:var(--red);}
+.choose-opt{display:flex;align-items:center;gap:13px;background:#202020;border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px;cursor:pointer;}
+.choose-opt .ci{width:44px;height:44px;border-radius:13px;background:var(--redsoft);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.choose-opt .ct2{font-weight:700;font-size:15px;color:#fff;}
+.choose-opt .cd{font-size:12px;color:var(--muted);margin-top:2px;}
 @media (display-mode:standalone),(display-mode:fullscreen),(max-width:560px){
 body{padding:0;background:#111111;align-items:stretch;justify-content:stretch;}
 .phone{width:100%;height:100dvh;max-width:none;border-radius:0;padding:0;box-shadow:none;background:#111111;}
@@ -82,7 +92,7 @@ body{padding:0;background:#111111;align-items:stretch;justify-content:stretch;}
 
 <script src="config.js"></script>
 <script>
-const P={home:"M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z",file:"M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM14 3v6h6M8 13h8M8 17h8",user:"M5 20v-1a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v1M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z",plus:"M12 5v14M5 12h14",x:"M18 6 6 18M6 6l12 12",clock:"M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 7v5l3.5 2",check:"M21.5 9.5A10 10 0 1 1 16.5 3M22 5 12 14.5l-3-3",truck:"M3 6h11v9H3zM14 9h4l3 3v3h-7zM7 18a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM18 18a2 2 0 1 0 0-4 2 2 0 0 0 0 4z",search:"M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.3-4.3",refresh:"M21 12a9 9 0 1 1-2.6-6.3M21 4v5h-5"};
+const P={home:"M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z",file:"M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM14 3v6h6M8 13h8M8 17h8",user:"M5 20v-1a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v1M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z",plus:"M12 5v14M5 12h14",x:"M18 6 6 18M6 6l12 12",clock:"M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 7v5l3.5 2",check:"M21.5 9.5A10 10 0 1 1 16.5 3M22 5 12 14.5l-3-3",truck:"M3 6h11v9H3zM14 9h4l3 3v3h-7zM7 18a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM18 18a2 2 0 1 0 0-4 2 2 0 0 0 0 4z",search:"M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.3-4.3",refresh:"M21 12a9 9 0 1 1-2.6-6.3M21 4v5h-5",logout:"M16 17l5-5-5-5M21 12H9M12 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h6"};
 function ic(n,s,col){const d=P[n];if(!d)return"";return `<svg width="${s||16}" height="${s||16}" viewBox="0 0 24 24" fill="none" stroke="${col||'currentColor'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d.split('M').filter(Boolean).map(p=>`<path d="M${p}"/>`).join('')}</svg>`;}
 
 const LIST={
@@ -95,7 +105,10 @@ const LIST={
 };
 const ORDERD=["Onaylandı - Sipariş","Üretimde","Sevkiyat / Yolda"], KAPALI=["Teslim Edildi","İptal / Kayıp"];
 let DATA={talepler:[],musteriler:[]};
-const S={tab:"panel",sheet:null,editing:null,filter:"hepsi",q:"",qm:"",loading:true,err:""};
+const S={tab:"panel",sheet:null,editing:null,filter:"hepsi",q:"",qm:"",loading:true,err:"",authed:false,loginErr:""};
+const AUTH={email:"info@ersamachinery.com",pass:"Ertu1q2w3e4r5t**"};
+function getRemember(){try{return localStorage.getItem("ersa_auth")==="1";}catch(e){return false;}}
+S.authed=getRemember();
 
 const $=s=>document.getElementById(s);
 const esc=s=>(s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -160,7 +173,10 @@ function panelView(){
  return `<div class="pad stg">
   <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-top:6px;">
    <div><div class="h1">ERSA GROUP</div><div class="sub">Çin Ofisi · Talep & Sipariş Takip</div></div>
-   <div class="circ tap" data-act="refresh" style="background:#202020;">${ic('refresh',18,'#EDEDED')}</div>
+   <div style="display:flex;gap:8px;">
+    <div class="circ tap" data-act="refresh" style="background:#202020;">${ic('refresh',18,'#EDEDED')}</div>
+    <div class="circ tap" data-act="logout" style="background:#202020;">${ic('logout',18,'#EDEDED')}</div>
+   </div>
   </div>
   ${S.err?`<div class="banner">${esc(S.err)}</div>`:""}
   <div class="blk" style="padding:20px 18px;margin-top:16px;">
@@ -269,7 +285,7 @@ function nextNo(){let mx=0;DATA.talepler.forEach(t=>{const m=/(\d+)\s*$/.exec(t.
 function sheetTalep(){
  const t=S.editing||{}, edit=!!S.editing;
  const cust=[...new Set(DATA.musteriler.map(m=>m.musteri))];
- return `<div class="ovl" data-act="close"><div class="sheet" onclick="event.stopPropagation()">
+ return `<div class="ovl"><div class="sheet">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
    <div class="disp" style="font-weight:700;font-size:17px;color:#fff;">${edit?esc(t.talepNo||'Talep')+' · düzenle':'Yeni Talep'}</div>
    <div class="circ tap" data-act="close" style="background:#2C2C2C;">${ic('x',16,'#EDEDED')}</div></div>
@@ -292,7 +308,7 @@ function sheetTalep(){
 }
 function sheetMusteri(){
  const m=S.editing||{}, edit=!!S.editing;
- return `<div class="ovl" data-act="close"><div class="sheet" onclick="event.stopPropagation()">
+ return `<div class="ovl"><div class="sheet">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
    <div class="disp" style="font-weight:700;font-size:17px;color:#fff;">${edit?'Müşteri · düzenle':'Yeni Müşteri'}</div>
    <div class="circ tap" data-act="close" style="background:#2C2C2C;">${ic('x',16,'#EDEDED')}</div></div>
@@ -304,34 +320,67 @@ function sheetMusteri(){
  </div></div>`;
 }
 
+function sheetChoose(){
+ return `<div class="ovl"><div class="sheet">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+   <div class="disp" style="font-weight:700;font-size:17px;color:#fff;">Ne eklemek istersiniz?</div>
+   <div class="circ tap" data-act="close" style="background:#2C2C2C;">${ic('x',16,'#EDEDED')}</div></div>
+  <div class="choose-opt tap" data-act="newTalep"><div class="ci">${ic('file',20,'#fff')}</div><div><div class="ct2">Talep / Sipariş Ekle</div><div class="cd">Yeni müşteri talebi veya sipariş kaydı</div></div></div>
+  <div class="choose-opt tap" data-act="newMusteri"><div class="ci">${ic('user',20,'#fff')}</div><div><div class="ct2">Müşteri Ekle</div><div class="cd">Yeni müşteri kartı / iletişim</div></div></div>
+ </div></div>`;
+}
+function renderLogin(){
+ $("scr").innerHTML=`<div class="login">
+  <img class="logo" src="logo-white.png" alt="ersa machinery">
+  <div class="lt">TALEP VE SİPARİŞ TAKİP</div>
+  <label class="lbl">E-posta</label>
+  <input id="lemail" class="field" type="email" value="info@ersamachinery.com" autocomplete="username">
+  <label class="lbl">Şifre</label>
+  <input id="lpass" class="field" type="password" placeholder="••••••••" autocomplete="current-password">
+  <label class="rememberbox"><input id="lremember" type="checkbox" ${getRemember()?'checked':''}> Beni hatırla</label>
+  <button class="btnred" id="lbtn" data-act="login">${ic('check',16,'#fff')} Giriş Yap</button>
+  <div class="lerr">${esc(S.loginErr||"")}</div>
+ </div>`;
+ $("navhost").innerHTML=""; $("sheethost").innerHTML="";
+ const p=$("lpass"); if(p){p.value="";p.addEventListener("keydown",ev=>{if(ev.key==="Enter")$("lbtn").click();});}
+}
 function nav(){
  const slot=(t,i,l)=>`<div class="nslot ${S.tab===t?'on':''}" data-act="tab" data-v="${t}">${ic(i,21,S.tab===t?'#C51515':'#8A8A8A')}<span>${l}</span></div>`;
  return `<div class="navwrap">
   ${slot('panel','home','Panel')}
   ${slot('talep','file','Talepler')}
-  <div class="cartbtn"><div class="cartcirc tap" data-act="new">${ic('plus',26,'#fff')}</div></div>
+  <div class="cartbtn"><div class="cartcirc tap" data-act="choose">${ic('plus',26,'#fff')}</div></div>
   ${slot('must','user','Müşteriler')}
   <div class="nslot tap" data-act="refresh">${ic('refresh',21,'#8A8A8A')}<span>Yenile</span></div>
  </div>`;
 }
 
 function render(){
+ if(!S.authed){renderLogin();return;}
  let h;
  if(S.loading){h=`<div class="pad"><div class="empty" style="padding-top:120px;">${ic('refresh',30,'#5A5A5A')}<div style="margin-top:10px;">Yükleniyor…</div></div></div>`;}
  else h=S.tab==='panel'?panelView():S.tab==='talep'?talepView():mustView();
  $("scr").innerHTML=h;
  $("navhost").innerHTML=nav();
- $("sheethost").innerHTML=S.sheet==='talep'?sheetTalep():S.sheet==='musteri'?sheetMusteri():'';
+ $("sheethost").innerHTML=S.sheet==='talep'?sheetTalep():S.sheet==='musteri'?sheetMusteri():S.sheet==='choose'?sheetChoose():'';
  if(!S.loading&&S.tab==='talep'){renderTList();const s=$("tsearch");if(s)s.oninput=e=>{S.q=e.target.value;renderTList();};}
  if(!S.loading&&S.tab==='must'){renderMList();const s=$("msearch");if(s)s.oninput=e=>{S.qm=e.target.value;renderMList();};}
  $("scr").scrollTop=0;
 }
 
 $("app").addEventListener("click",async function(e){
+ if(e.target.classList&&e.target.classList.contains("ovl")){S.sheet=null;render();return;}
  const el=e.target.closest("[data-act]"); if(!el)return;
  const a=el.getAttribute("data-act");
  if(a==="tab"){S.tab=el.getAttribute("data-v");S.sheet=null;render();}
  else if(a==="refresh"){load();}
+ else if(a==="login"){const em=$("lemail").value.trim().toLowerCase();const pw=$("lpass").value;const rem=$("lremember")&&$("lremember").checked;
+   if(em===AUTH.email.toLowerCase()&&pw===AUTH.pass){if(rem){try{localStorage.setItem("ersa_auth","1");}catch(e){}}S.authed=true;S.loginErr="";load();}
+   else{S.loginErr="E-posta veya şifre hatalı.";render();}}
+ else if(a==="logout"){try{localStorage.removeItem("ersa_auth");}catch(e){}S.authed=false;S.tab="panel";S.sheet=null;S.loginErr="";render();}
+ else if(a==="choose"){S.editing=null;S.sheet="choose";render();}
+ else if(a==="newTalep"){S.editing=null;S.sheet="talep";render();}
+ else if(a==="newMusteri"){S.editing=null;S.sheet="musteri";render();}
  else if(a==="new"){S.editing=null;S.sheet=(S.tab==='must')?'musteri':'talep';render();}
  else if(a==="edit"){S.editing=DATA.talepler.find(t=>String(t._row)===el.getAttribute("data-row"));S.sheet='talep';render();}
  else if(a==="editm"){S.editing=DATA.musteriler.find(m=>String(m._row)===el.getAttribute("data-row"));S.sheet='musteri';render();}
@@ -363,7 +412,7 @@ $("app").addEventListener("click",async function(e){
 
 function clk(){const d=new Date();const el=$("clock");if(el)el.textContent=String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");}
 clk();setInterval(clk,30000);
-load();
+if(S.authed){load();}else{S.loading=false;render();}
 </script>
 <script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}</script>
 </body></html>
