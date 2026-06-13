@@ -1,7 +1,6 @@
-// ERSA Takip — basit kabuk önbelleği. Veri (Apps Script) her zaman canlı çekilir.
-const CACHE = "ersa-takip-v1";
+const CACHE = "ersa-takip-v2";
 const SHELL = [
-  "./", "./index.html", "./app.js", "./config.js",
+  "./", "./index.html", "./app.js",
   "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"
 ];
 self.addEventListener("install", e => {
@@ -12,8 +11,10 @@ self.addEventListener("activate", e => {
 });
 self.addEventListener("fetch", e => {
   const url = new URL(e.request.url);
-  // Apps Script / API çağrıları: her zaman ağdan (önbelleğe alma)
   if (url.hostname.includes("script.google.com") || e.request.method !== "GET") return;
-  // Kabuk dosyaları: önce önbellek, yoksa ağ
+  if (url.pathname.endsWith("/config.js")) {
+    e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+    return;
+  }
   e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
 });
